@@ -5,11 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kraken Batch Orders</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#000000">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css?v=1" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js?v=1"></script>
-    <script src="utils.js?v=1"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             padding: 20px;
@@ -26,7 +23,6 @@
             max-height: 400px;
             overflow-y: auto;
         }
-        /* More compact form styling */
         .form-group {
             margin-bottom: 0.5rem;
         }
@@ -57,15 +53,13 @@
         </ul>
 
         <div class="tab-content" id="orderTabsContent">
-            <!-- Create Orders Tab -->
             <div class="tab-pane fade show active" id="create" role="tabpanel">
                 <form id="orderForm" class="mb-3">
                     <div class="row">
                         <div class="col-12 col-md-6">
                             <div class="form-group">
                                 <label for="asset">Trading Pair:</label>
-                                <select class="form-control" id="asset" required>
-                                </select>
+                                <select class="form-control" id="asset" required></select>
                             </div>
                             <div id="currentPrice" class="mt-2 text-muted"></div>
                             <div class="form-group">
@@ -97,8 +91,7 @@
                     </div>
                 </form>
 
-                <div id="previewSection" class="preview-section">
-                    <h6 id="orderDirection"></h6>
+                <div id="previewSection">
                     <div class="table-responsive">
                         <div id="previewTable"></div>
                     </div>
@@ -110,13 +103,12 @@
 
                 <div id="result"></div>
 
-                <div id="orderDetails" class="alert alert-success" style="display: none;">
+                <div id="orderDetails" class="alert alert-success" style="display: none">
                     <h6>Created Orders:</h6>
                     <div id="orderList"></div>
                 </div>
             </div>
 
-            <!-- Open Orders Tab -->
             <div class="tab-pane fade" id="open" role="tabpanel">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6>Open Orders</h6>
@@ -149,393 +141,8 @@
         </div>
     </div>
 
-    <script>
-        function calculateOrders() {
-            const price = parseFloat(document.getElementById('price').value);
-            const numOrders = parseInt(document.getElementById('numOrders').value);
-            const distance = parseFloat(document.getElementById('distance').value);
-            const direction = document.getElementById('direction').value;
-            const total = parseFloat(document.getElementById('total').value);
-            const asset = document.getElementById('asset').value;
-
-            if (!price || !numOrders || !distance || !total) {
-                document.getElementById('previewTable').innerHTML = '<p>Please fill in all fields</p>';
-                return;
-            }
-
-            const orders = [];
-            
-            // Calculate the sum of the geometric progression factors
-            let sumFactors = 0;
-            for (let i = 0; i < numOrders; i++) {
-                sumFactors += Math.pow(1 + distance / 100, i);
-            }
-            
-            // Calculate the base price that will result in the desired total
-            const basePrice = total / sumFactors;
-            const adjustedDistance = direction === 'buy' ? -distance : distance;
-
-            for (let i = 0; i < numOrders; i++) {
-                const orderPrice = direction === 'buy'
-                    ? price / Math.pow(1 + distance / 100, i)
-                    : price * Math.pow(1 + distance / 100, i);
-                // Calculate this order's portion using geometric progression
-                const pricePerOrder = basePrice * Math.pow(1 + distance / 100, i);
-                const volume = pricePerOrder / orderPrice;
-                const totalUsd = orderPrice * volume;
-                
-                orders.push({
-                    orderPrice: orderPrice,
-                    volume: volume,
-                    total: totalUsd,
-                    leverage: getLeverage(asset)
-                });
-            }
-
-            const pairInfo = getPairInfo(asset);
-            const priceDecimals = pairInfo.priceDecimals;
-
-            // Calculate total range first
-            const firstPrice = orders[0].orderPrice;
-            const lastPrice = orders[orders.length - 1].orderPrice;
-            const totalRange = direction === 'buy' 
-                ? ((lastPrice - firstPrice) / firstPrice * 100) 
-                : ((lastPrice - firstPrice) / firstPrice * 100);
-
-            let tableHtml = '';
-            let totalValue = 0;
-            let totalCoins = 0;
-
-            orders.forEach((order, index) => {
-                totalValue += order.total;
-                totalCoins += order.volume;
-                tableHtml += `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td>$${order.orderPrice.toFixed(priceDecimals)}</td>
-                        <td>${order.volume.toFixed(6)}</td>
-                        <td>$${order.total.toFixed(2)}</td>
-                    </tr>
-                `;
-            });
-
-            // Add summary row
-            tableHtml += `
-                <tr>
-                    <td><strong>${totalRange.toFixed(2)}% Total range</strong></td>
-                    <td><strong>$${(totalValue / totalCoins).toFixed(priceDecimals)} Average price</strong></td>
-                    <td><strong>${totalCoins.toFixed(6)} Total volume</strong></td>
-                    <td><strong>$${totalValue.toFixed(2)} Total USD</strong></td>
-                </tr>
-            `;
-
-            tableHtml = `
-                <table class="table table-striped">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Price</th>
-                            <th>Volume</th>
-                            <th>Volume USD</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            ` + tableHtml + '</tbody></table>';
-            document.getElementById('previewTable').innerHTML = tableHtml;
-        }
-
-        // Add event listeners to all form inputs
-        document.querySelectorAll('#orderForm input, #orderForm select').forEach(element => {
-            element.addEventListener('change', (e) => {
-                if (e.target.id === 'direction') {
-                    // When direction changes, update the price
-                    updatePrice(document.getElementById('asset').value);
-                } else {
-                    calculateOrders();
-                }
-            });
-            element.addEventListener('input', calculateOrders);
-        });
-
-        document.getElementById('createButton').addEventListener('click', async () => {
-            const formData = {
-                asset: document.getElementById('asset').value,
-                price: document.getElementById('price').value,
-                direction: document.getElementById('direction').value,
-                numOrders: document.getElementById('numOrders').value,
-                distance: document.getElementById('distance').value,
-                total: document.getElementById('total').value
-            };
-
-            try {
-                const response = await fetch('/api/batch-order', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                });
-
-                const result = await response.json();
-                if (result.error && result.error.length > 0) {
-                    document.getElementById('result').innerHTML = `<div class="alert alert-danger">${result.error.join(', ')}</div>`;
-                } else {
-                    document.getElementById('result').innerHTML = `<div class="alert alert-success">Orders placed successfully!</div>`;
-                    
-                    // Display order details
-                    const orderDetails = document.getElementById('orderDetails');
-                    const orderList = document.getElementById('orderList');
-                    orderList.innerHTML = result.result.orders.map(order => 
-                        `<div>${order.descr.order}</div>`
-                    ).join('');
-                    orderDetails.style.display = 'block';
-                }
-            } catch (error) {
-                document.getElementById('result').innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
-            }
-        });
-
-        document.getElementById('resetButton').addEventListener('click', () => {
-            document.getElementById('orderForm').reset();
-            const info = getPairInfo(document.getElementById('asset').value);
-            if (info) {
-                document.getElementById('price').value = info.defaultPrice;
-                calculateOrders();
-            }
-        });
-
-        // Initial preview
-        calculateOrders();
-
-        // Add function to fetch open orders
-        async function fetchOpenOrders() {
-            const tbody = document.getElementById('openOrdersTable');
-            const errorDiv = document.getElementById('orderError');
-            errorDiv.style.display = 'none'; // Hide any existing messages
-            
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">Loading orders...</td></tr>';
-            
-            try {
-                const response = await fetch('/api/open-orders', {
-                    method: 'GET',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                const result = await response.json();
-                
-                if (result.error && result.error.length > 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${result.error.join(', ')}</td></tr>`;
-                    return;
-                }
-
-                if (!result.result.open || Object.keys(result.result.open).length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">No open orders</td></tr>';
-                    return;
-                }
-
-                // Convert orders object to array and sort by price in descending order
-                const sortedOrders = Object.entries(result.result.open)
-                    .sort(([, a], [, b]) => parseFloat(b.descr.price) - parseFloat(a.descr.price));
-
-                tbody.innerHTML = sortedOrders.map(([orderId, order]) => `
-                    <tr id="order-${orderId}">
-                        <td>${order.descr.pair}</td>
-                        <td>${order.descr.type}</td>
-                        <td>${order.descr.price}</td>
-                        <td>${order.vol}</td>
-                        <td>$${(parseFloat(order.descr.price) * parseFloat(order.vol)).toFixed(2)}</td>
-                        <td>
-                            <button class="btn btn-danger btn-sm" onclick="cancelOrder('${orderId}', document.getElementById('order-${orderId}'))">
-                                Cancel
-                            </button>
-                        </td>
-                    </tr>
-                `).join('');
-            } catch (error) {
-                document.getElementById('openOrdersTable').innerHTML = 
-                    `<tr><td colspan="6" class="text-center text-danger">Error loading orders: ${error.message}</td></tr>`;
-            }
-        }
-
-        // Add function to cancel order
-        async function cancelOrder(txid, rowElement) {
-            const errorDiv = document.getElementById('orderError');
-            errorDiv.style.display = 'none';
-            
-            try {
-                const response = await fetch('/api/cancel-order', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ txid })
-                });
-
-                const result = await response.json();
-                
-                if (result.error && result.error.length > 0) {
-                    errorDiv.textContent = 'Error canceling order: ' + result.error.join(', ');
-                    errorDiv.style.display = 'block';
-                    return;
-                }
-
-                // Remove the row from the table
-                rowElement.remove();
-
-                // If no orders left, show the "No open orders" message
-                const tbody = document.getElementById('openOrdersTable');
-                if (tbody.children.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">No open orders</td></tr>';
-                }
-            } catch (error) {
-                errorDiv.textContent = 'Error canceling order: ' + error.message;
-                errorDiv.style.display = 'block';
-            }
-        }
-
-        async function cancelAllOrders() {
-            const errorDiv = document.getElementById('orderError');
-            errorDiv.style.display = 'none';
-            
-            try {
-                const response = await fetch('/api/cancel-all', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                const result = await response.json();
-                
-                if (result.error && result.error.length > 0) {
-                    errorDiv.textContent = 'Error canceling all orders: ' + result.error.join(', ');
-                    errorDiv.style.display = 'block';
-                    return;
-                }
-
-                // Show success message
-                errorDiv.className = 'alert alert-success mt-3';
-                errorDiv.textContent = `Successfully canceled ${result.count} orders${result.pending ? ' (pending)' : ''}`;
-                errorDiv.style.display = 'block';
-
-                // If not pending, clear the table
-                if (!result.pending) {
-                    const tbody = document.getElementById('openOrdersTable');
-                    tbody.innerHTML = '<tr><td colspan="6" class="text-center">No open orders</td></tr>';
-                } else {
-                    // If pending, disable all cancel buttons
-                    const cancelButtons = document.querySelectorAll('#openOrdersTable button');
-                    cancelButtons.forEach(btn => {
-                        btn.disabled = true;
-                        btn.textContent = 'Canceling...';
-                    });
-                }
-            } catch (error) {
-                errorDiv.className = 'alert alert-danger mt-3';
-                errorDiv.textContent = 'Error canceling all orders: ' + error.message;
-                errorDiv.style.display = 'block';
-            }
-        }
-
-        // Initialize Bootstrap tabs
-        const openOrdersTab = document.getElementById('open-tab');
-        const openOrdersTabInstance = new bootstrap.Tab(openOrdersTab);
-
-        // Fetch orders when tab is shown
-        openOrdersTab.addEventListener('shown.bs.tab', fetchOpenOrders);
-        
-        // Refresh button handler
-        document.getElementById('refreshOrders').addEventListener('click', fetchOpenOrders);
-
-        // Add event listener for Cancel All button
-        document.getElementById('cancelAll').addEventListener('click', cancelAllOrders);
-
-        // Populate asset select options
-        function populateAssetOptions() {
-            const assetSelect = document.getElementById('asset');
-            const assets = getSupportedAssets();
-            
-            assetSelect.innerHTML = assets.map(asset => {
-                const info = getPairInfo(asset);
-                return `<option value="${asset}">${info.name} (${asset})</option>`;
-            }).join('');
-
-            // Set default price based on selected asset
-            assetSelect.addEventListener('change', function() {
-                const info = getPairInfo(this.value);
-                if (info) {
-                    document.getElementById('price').value = info.defaultPrice;
-                    calculateOrders();
-                }
-                startPriceUpdates(this.value);
-            });
-
-            // Set initial price
-            const initialInfo = getPairInfo(assetSelect.value);
-            if (initialInfo) {
-                document.getElementById('price').value = initialInfo.defaultPrice;
-                calculateOrders(); // Calculate initial orders
-            }
-        }
-
-        let priceUpdateInterval;
-
-        async function updatePrice(pair) {
-            try {
-                const krakenPair = pair.replace('BTC/', 'XBT').replace('/', '');
-                const response = await fetch(`/api/ticker/${krakenPair}`);
-                const data = await response.json();
-                
-                if (data.error && data.error.length > 0) {
-                    document.getElementById('currentPrice').textContent = 'Error fetching price';
-                    return;
-                }
-                
-                const result = data.result[Object.keys(data.result)[0]];
-                const lastPrice = parseFloat(result.c[0]);
-                document.getElementById('currentPrice').textContent = `Current Price: ${lastPrice}`;
-
-                // Get the direction and set price accordingly
-                const direction = document.getElementById('direction').value;
-                const priceInput = document.getElementById('price');
-                if (direction === 'buy') {
-                    priceInput.value = (lastPrice * 0.9).toFixed(2); // 10% below current price
-                } else {
-                    priceInput.value = (lastPrice * 1.1).toFixed(2); // 10% above current price
-                }
-                calculateOrders(); // Recalculate orders with new price
-            } catch (error) {
-                document.getElementById('currentPrice').textContent = 'Error fetching price';
-            }
-        }
-
-        function startPriceUpdates(pair) {
-            if (priceUpdateInterval) {
-                clearInterval(priceUpdateInterval);
-            }
-            updatePrice(pair);
-            priceUpdateInterval = setInterval(() => updatePrice(pair), 60000);
-        }
-
-        // Call it when page loads
-        populateAssetOptions();
-        startPriceUpdates(document.getElementById('asset').value);
-    </script>
-
-    <script>
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', function() {
-                navigator.serviceWorker.register('service-worker.js?v=1')
-                    .then(function(registration) {
-                        // Registration successful
-                    })
-                    .catch(function(err) {
-                        // Registration failed
-                    });
-            });
-        }
-    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="utils.js"></script>
+    <script src="main.js"></script>
 </body>
 </html>
