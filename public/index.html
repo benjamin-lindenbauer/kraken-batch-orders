@@ -87,7 +87,7 @@
                             </div>
                             <div class="form-group">
                                 <label for="distance">Distance (%):</label>
-                                <input type="number" class="form-control" id="distance" step="0.1" value="3.4" min="0.1" max="20.0" required>
+                                <input type="number" class="form-control" id="distance" step="0.1" value="3.0" min="0.1" max="20.0" required>
                             </div>
                             <div class="form-group">
                                 <label for="total">Total Amount (USD):</label>
@@ -246,7 +246,14 @@
 
         // Add event listeners to all form inputs
         document.querySelectorAll('#orderForm input, #orderForm select').forEach(element => {
-            element.addEventListener('change', calculateOrders);
+            element.addEventListener('change', (e) => {
+                if (e.target.id === 'direction') {
+                    // When direction changes, update the price
+                    updatePrice(document.getElementById('asset').value);
+                } else {
+                    calculateOrders();
+                }
+            });
             element.addEventListener('input', calculateOrders);
         });
 
@@ -487,8 +494,18 @@
                 }
                 
                 const result = data.result[Object.keys(data.result)[0]];
-                const lastPrice = result.c[0];
+                const lastPrice = parseFloat(result.c[0]);
                 document.getElementById('currentPrice').textContent = `Current Price: ${lastPrice}`;
+
+                // Get the direction and set price accordingly
+                const direction = document.getElementById('direction').value;
+                const priceInput = document.getElementById('price');
+                if (direction === 'buy') {
+                    priceInput.value = (lastPrice * 0.9).toFixed(2); // 10% below current price
+                } else {
+                    priceInput.value = (lastPrice * 1.1).toFixed(2); // 10% above current price
+                }
+                calculateOrders(); // Recalculate orders with new price
             } catch (error) {
                 document.getElementById('currentPrice').textContent = 'Error fetching price';
             }
