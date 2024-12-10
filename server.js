@@ -10,7 +10,25 @@ dotenv.config();
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+
+// Add cache control headers for all responses
+app.use((req, res, next) => {
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+    next();
+});
+
+// Serve static files with no-cache options
+app.use(express.static('public', {
+    etag: false,
+    lastModified: false,
+    setHeaders: (res) => {
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
+        res.set('Pragma', 'no-cache');
+        res.set('Expires', '0');
+    }
+}));
 
 // Import utils
 const { getLeverage, getPairInfo } = require('./public/utils.js');
@@ -211,12 +229,10 @@ router.post('/api/cancel-all', async (req, res) => {
 router.get('/api/ticker/:pair', async (req, res) => {
     try {
         const pair = req.params.pair;
-        console.log('Fetching ticker for pair:', pair);
+        const nonce = Date.now().toString();
         const response = await axios.get(`https://api.kraken.com/0/public/Ticker?pair=${pair}`);
-        console.log('Ticker response:', response.data);
         res.json(response.data);
     } catch (error) {
-        console.error('Error fetching ticker:', error.message);
         res.status(500).json({ error: error.message });
     }
 });
@@ -225,9 +241,7 @@ router.get('/api/ticker/:pair', async (req, res) => {
 if (process.env.NODE_ENV !== 'production') {
     const PORT = process.env.PORT || 3000;
     app.use('/', router);
-    app.listen(PORT, () => {
-        console.log(`Server is running on port ${PORT}`);
-    });
+    app.listen(PORT, () => {});
 }
 
 // Export the router for Netlify Functions
