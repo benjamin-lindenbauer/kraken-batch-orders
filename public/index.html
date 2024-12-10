@@ -80,11 +80,11 @@
                         <div class="col-12 col-md-6">
                             <div class="form-group">
                                 <label for="numOrders">Amount of Orders:</label>
-                                <input type="number" class="form-control" id="numOrders" value="8" min="1" max="15" required>
+                                <input type="number" class="form-control" id="numOrders" value="5" min="1" max="15" required>
                             </div>
                             <div class="form-group">
                                 <label for="distance">Distance (%):</label>
-                                <input type="number" class="form-control" id="distance" step="0.1" value="2.2" min="0.1" max="20.0" required>
+                                <input type="number" class="form-control" id="distance" step="0.1" value="3.4" min="0.1" max="20.0" required>
                             </div>
                             <div class="form-group">
                                 <label for="total">Total Amount (USD):</label>
@@ -101,7 +101,7 @@
                     </div>
                     <div class="action-buttons">
                         <button id="confirmButton" class="btn btn-success">Confirm Orders</button>
-                        <button id="modifyButton" class="btn btn-secondary ms-2">Reset</button>
+                        <button id="resetButton" class="btn btn-secondary ms-2">Reset</button>
                     </div>
                 </div>
 
@@ -285,9 +285,13 @@
             }
         });
 
-        document.getElementById('modifyButton').addEventListener('click', () => {
+        document.getElementById('resetButton').addEventListener('click', () => {
             document.getElementById('orderForm').reset();
-            calculateOrders();
+            const info = getPairInfo(document.getElementById('asset').value);
+            if (info) {
+                document.getElementById('price').value = info.defaultPrice;
+                calculateOrders();
+            }
         });
 
         // Initial preview

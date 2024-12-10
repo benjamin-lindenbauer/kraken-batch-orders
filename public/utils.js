@@ -4,13 +4,13 @@ const TRADING_PAIRS = {
     'BTC/USD': {
         name: 'Bitcoin',
         leverage: '5',
-        defaultPrice: '80008',
+        defaultPrice: '80042',
         priceDecimals: 1
     },
     'XRP/USD': {
         name: 'Ripple',
         leverage: '5',
-        defaultPrice: '1.951',
+        defaultPrice: '1.952',
         priceDecimals: 5
     },
     'DOGE/USD': {
