@@ -3,7 +3,6 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const axios = require('axios');
 const crypto = require('crypto');
-const path = require('path');
 
 dotenv.config();
 
@@ -229,7 +228,6 @@ router.post('/api/cancel-all', async (req, res) => {
 router.get('/api/ticker/:pair', async (req, res) => {
     try {
         const pair = req.params.pair;
-        const nonce = Date.now().toString();
         const response = await axios.get(`https://api.kraken.com/0/public/Ticker?pair=${pair}`);
         res.json(response.data);
     } catch (error) {

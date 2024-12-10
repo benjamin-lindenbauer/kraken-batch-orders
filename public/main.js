@@ -97,7 +97,7 @@ function calculateOrders() {
 
 async function updatePrice(pair) {
     try {
-        const krakenPair = pair.replace('BTC/', 'XBT').replace('/', '');
+        const krakenPair = pair.replace('/', '');
         const response = await fetch(`/api/ticker/${krakenPair}`);
         const data = await response.json();
         
@@ -108,12 +108,12 @@ async function updatePrice(pair) {
         
         const result = data.result[Object.keys(data.result)[0]];
         const lastPrice = parseFloat(result.c[0]);
-        document.getElementById('currentPrice').textContent = `Current Price: ${lastPrice}`;
+        document.getElementById('currentPrice').textContent = `Current price: $${lastPrice}`;
 
         // Get the direction and set price accordingly
         const direction = document.getElementById('direction').value;
         const priceInput = document.getElementById('price');
-        const pairInfo = window.getPairInfo(pair.replace('BTC/', 'XBT/'));
+        const pairInfo = window.getPairInfo(pair);
         const priceDecimals = pairInfo.priceDecimals;
         if (direction === 'buy') {
             priceInput.value = (lastPrice * 0.9).toFixed(priceDecimals); // 10% below current price
