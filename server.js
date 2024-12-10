@@ -1,9 +1,11 @@
-require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const dotenv = require('dotenv');
 const axios = require('axios');
 const crypto = require('crypto');
 const path = require('path');
+
+dotenv.config();
 
 const app = express();
 app.use(cors());
@@ -16,8 +18,8 @@ const { getLeverage, getPairInfo } = require('./public/utils.js');
 function getMessageSignature(path, postData, secret, nonce) {
     const message = postData;
     const secret_buffer = Buffer.from(secret, 'base64');
-    const hash = crypto.createHash('sha256');
-    const hmac = crypto.createHmac('sha512', secret_buffer);
+    const hash = new crypto.createHash('sha256');
+    const hmac = new crypto.createHmac('sha512', secret_buffer);
     const hash_digest = hash.update(nonce + message).digest('binary');
     const hmac_digest = hmac.update(path + hash_digest, 'binary').digest('base64');
     return hmac_digest;
@@ -53,6 +55,8 @@ app.post('/api/batch-order', async (req, res) => {
         }
 
         const nonce = Date.now().toString();
+        const path = '/0/private/AddOrderBatch';
+
         const requestData = {
             nonce: nonce,
             orders: orders,
@@ -61,7 +65,6 @@ app.post('/api/batch-order', async (req, res) => {
             deadline: new Date(Date.now() + 30000).toISOString()
         };
 
-        const path = '/0/private/AddOrderBatch';
         const signature = getMessageSignature(path, JSON.stringify(requestData), process.env.KRAKEN_API_SECRET, nonce);
 
         const config = {
@@ -76,24 +79,10 @@ app.post('/api/batch-order', async (req, res) => {
             data: requestData
         };
 
-        console.log('\n=== REQUEST TO KRAKEN API ===');
-        console.log('URL:', config.url);
-        console.log('Headers:', {
-            ...config.headers,
-            'API-Key': '***hidden***',
-            'API-Sign': '***hidden***'
-        });
-        console.log('Request Body:', JSON.stringify(requestData, null, 2));
-
         const response = await axios.request(config);
         
-        console.log('\n=== RESPONSE FROM KRAKEN API ===');
-        console.log('Status:', response.status);
-        console.log('Response Data:', JSON.stringify(response.data, null, 2));
-
         res.json(response.data);
     } catch (error) {
-        console.error('Error:', error.response?.data || error.message);
         res.status(500).json({ error: error.response?.data || error.message });
     }
 });
@@ -200,7 +189,6 @@ app.post('/api/cancel-all', async (req, res) => {
         
         res.json(data.result);
     } catch (error) {
-        console.error('Error canceling all orders:', error);
         res.status(500).json({ error: [error.message] });
     }
 });
