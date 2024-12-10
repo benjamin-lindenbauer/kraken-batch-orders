@@ -48,8 +48,8 @@ app.post('/api/batch-order', async (req, res) => {
         
         for (let i = 0; i < numOrders; i++) {
             const orderPrice = direction === 'buy' 
-                ? price / (1 + (i * distance / 100))
-                : price * (1 + (i * distance / 100));
+                ? price / Math.pow(1 + distance / 100, i)
+                : price * Math.pow(1 + distance / 100, i);
             // Calculate this order's portion of the total using the geometric progression
             const pricePerOrder = basePrice * Math.pow(1 + distance / 100, i);
             const volume = pricePerOrder / orderPrice;
