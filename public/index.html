@@ -102,7 +102,7 @@
                         <div id="previewTable"></div>
                     </div>
                     <div class="action-buttons">
-                        <button id="confirmButton" class="btn btn-success">Confirm Orders</button>
+                        <button id="createButton" class="btn btn-success">Create Orders</button>
                         <button id="resetButton" class="btn btn-secondary ms-2">Reset</button>
                     </div>
                 </div>
@@ -110,7 +110,7 @@
                 <div id="result"></div>
 
                 <div id="orderDetails" class="alert alert-success" style="display: none;">
-                    <h6>Confirmed Orders:</h6>
+                    <h6>Created Orders:</h6>
                     <div id="orderList"></div>
                 </div>
             </div>
@@ -249,7 +249,7 @@
             element.addEventListener('input', calculateOrders);
         });
 
-        document.getElementById('confirmButton').addEventListener('click', async () => {
+        document.getElementById('createButton').addEventListener('click', async () => {
             const formData = {
                 asset: document.getElementById('asset').value,
                 price: document.getElementById('price').value,

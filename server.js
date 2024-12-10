@@ -25,7 +25,10 @@ function getMessageSignature(path, postData, secret, nonce) {
     return hmac_digest;
 }
 
-app.post('/api/batch-order', async (req, res) => {
+// Export the router for Netlify Functions
+const router = express.Router();
+
+router.post('/api/batch-order', async (req, res) => {
     const { asset, price, direction, numOrders, distance, total } = req.body;
     
     try {
@@ -99,7 +102,7 @@ app.post('/api/batch-order', async (req, res) => {
     }
 });
 
-app.post('/api/cancel-order', async (req, res) => {
+router.post('/api/cancel-order', async (req, res) => {
     try {
         const { txid } = req.body;
         const nonce = Date.now().toString();
@@ -135,7 +138,7 @@ app.post('/api/cancel-order', async (req, res) => {
     }
 });
 
-app.get('/api/open-orders', async (req, res) => {
+router.get('/api/open-orders', async (req, res) => {
     try {
         const nonce = Date.now().toString();
         const path = '/0/private/OpenOrders';
@@ -170,7 +173,7 @@ app.get('/api/open-orders', async (req, res) => {
 });
 
 // Add the cancel-all endpoint
-app.post('/api/cancel-all', async (req, res) => {
+router.post('/api/cancel-all', async (req, res) => {
     try {
         const nonce = Date.now().toString();
         const path = '/0/private/CancelAll';
@@ -205,7 +208,14 @@ app.post('/api/cancel-all', async (req, res) => {
     }
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+// For local development
+if (process.env.NODE_ENV !== 'production') {
+    const PORT = process.env.PORT || 3000;
+    app.use('/', router);
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+    });
+}
+
+// Export the router for Netlify Functions
+module.exports = router;
