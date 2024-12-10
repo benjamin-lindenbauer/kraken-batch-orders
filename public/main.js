@@ -65,7 +65,7 @@ function calculateOrders() {
             <tr>
                 <td>${index + 1}</td>
                 <td>$${order.orderPrice.toFixed(priceDecimals)}</td>
-                <td>${order.volume.toFixed(6)}</td>
+                <td>${order.volume.toFixed(6)} ${pairInfo.symbol}</td>
                 <td>$${order.total.toFixed(2)}</td>
             </tr>
         `;
