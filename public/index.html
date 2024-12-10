@@ -55,65 +55,72 @@
         <div class="tab-content" id="orderTabsContent">
             <div class="tab-pane fade show active" id="create" role="tabpanel">
                 <form id="orderForm" class="mb-2">
-                    <!-- Row 1: Trading pair and current price -->
-                    <div class="row mb-2">
-                        <div class="col-6">
-                            <div class="form-group">
-                                <label for="asset">Trading Pair:</label>
-                                <select class="form-control" id="asset" required></select>
-                            </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">Create scale orders</h5>
                         </div>
-                        <div class="col-6">
-                            <div class="form-group">
-                                <label class="text-muted">Current Price:</label>
-                                <div id="currentPrice" class="form-control-plaintext"></div>
+                        <div class="card-body">
+                            <!-- Row 1: Trading pair and current price -->
+                            <div class="row align-items-center mb-3">
+                                <div class="col-6">
+                                    <div class="input-group">
+                                        <span class="input-group-text">Trading Pair</span>
+                                        <select class="form-select" id="asset" required></select>
+                                    </div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="input-group">
+                                        <span class="input-group-text">Current Price</span>
+                                        <div class="form-control" id="currentPrice"></div>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                    </div>
-                
-                    <!-- Row 2: Direction, Amount of Orders, Total Amount -->
-                    <div class="row mb-2">
-                        <div class="col-4">
-                            <div class="form-group">
-                                <label for="direction">Direction:</label>
-                                <select class="form-control" id="direction" required>
-                                    <option value="buy">Buy</option>
-                                    <option value="sell">Sell</option>
-                                </select>
+
+                            <!-- Row 2: Direction, Amount of Orders, Total Amount -->
+                            <div class="row align-items-center mb-3">
+                                <div class="col-4">
+                                    <div class="input-group">
+                                        <span class="input-group-text">Direction</span>
+                                        <select class="form-select" id="direction" required>
+                                            <option value="buy">Buy</option>
+                                            <option value="sell">Sell</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="input-group">
+                                        <span class="input-group-text">Orders</span>
+                                        <input type="number" class="form-control" id="numOrders" value="15" min="2" max="15" required>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="input-group">
+                                        <span class="input-group-text">Total USD</span>
+                                        <input type="number" class="form-control" id="total" step="1000" value="35000" min="1000" required>
+                                    </div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="form-group">
-                                <label for="numOrders">Amount of Orders:</label>
-                                <input type="number" class="form-control" id="numOrders" value="15" min="2" max="15" required>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="form-group">
-                                <label for="total">Total Amount (USD):</label>
-                                <input type="number" class="form-control" id="total" step="1000" value="35000" min="1000" required>
-                            </div>
-                        </div>
-                    </div>
-                
-                    <!-- Row 3: Price of First Order, Price Distance, Volume Distance -->
-                    <div class="row mb-2">
-                        <div class="col-4">
-                            <div class="form-group">
-                                <label for="price">Price of First Order:</label>
-                                <input type="number" class="form-control" id="price" required>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="form-group">
-                                <label for="distance">Price Distance (%):</label>
-                                <input type="number" class="form-control" id="distance" step="0.1" value="2.0" min="0.1" max="10.0" required>
-                            </div>
-                        </div>
-                        <div class="col-4">
-                            <div class="form-group">
-                                <label for="volume_distance">Volume Distance (%):</label>
-                                <input type="number" class="form-control" id="volume_distance" step="1" value="10" min="1" max="30" required>
+
+                            <!-- Row 3: Price of First Order, Price Distance, Volume Distance -->
+                            <div class="row align-items-center">
+                                <div class="col-4">
+                                    <div class="input-group">
+                                        <span class="input-group-text">First Price</span>
+                                        <input type="number" class="form-control" id="price" required>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="distance" step="0.1" value="2.0" min="0.1" max="10.0" required>
+                                        <span class="input-group-text">Price %</span>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="input-group">
+                                        <input type="number" class="form-control" id="volume_distance" step="1" value="10" min="1" max="30" required>
+                                        <span class="input-group-text">Volume %</span>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
