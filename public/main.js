@@ -6,21 +6,22 @@ function calculateOrders() {
     const price = parseFloat(document.getElementById('price').value);
     const numOrders = parseInt(document.getElementById('numOrders').value);
     const distance = parseFloat(document.getElementById('distance').value);
+    const volume_distance = parseFloat(document.getElementById('volume_distance').value);
     const direction = document.getElementById('direction').value;
     const total = parseFloat(document.getElementById('total').value);
     const asset = document.getElementById('asset').value;
 
-    if (!price || !numOrders || !distance || !total) {
+    if (!price || !numOrders || !distance || !volume_distance || !total) {
         document.getElementById('previewTable').innerHTML = '<p>Please fill in all fields</p>';
         return;
     }
 
     const orders = [];
     
-    // Calculate the sum of the geometric progression factors
+    // Calculate the sum of the geometric progression factors for volume
     let sumFactors = 0;
     for (let i = 0; i < numOrders; i++) {
-        sumFactors += Math.pow(1 + distance / 100, i);
+        sumFactors += Math.pow(1 + volume_distance / 100, i);
     }
     
     // Calculate the base price that will result in the desired total
@@ -30,8 +31,8 @@ function calculateOrders() {
         const orderPrice = direction === 'buy'
             ? price / Math.pow(1 + distance / 100, i)
             : price * Math.pow(1 + distance / 100, i);
-        // Calculate this order's portion using geometric progression
-        const pricePerOrder = basePrice * Math.pow(1 + distance / 100, i);
+        // Calculate this order's portion using geometric progression with volume_distance
+        const pricePerOrder = basePrice * Math.pow(1 + volume_distance / 100, i);
         const volume = pricePerOrder / orderPrice;
         const totalUsd = orderPrice * volume;
         
@@ -312,6 +313,7 @@ document.addEventListener('DOMContentLoaded', () => {
             direction: document.getElementById('direction').value,
             numOrders: document.getElementById('numOrders').value,
             distance: document.getElementById('distance').value,
+            volume_distance: document.getElementById('volume_distance').value,
             total: document.getElementById('total').value
         };
 

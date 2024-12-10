@@ -46,7 +46,7 @@ function getMessageSignature(path, postData, secret, nonce) {
 const router = express.Router();
 
 router.post('/api/batch-order', async (req, res) => {
-    const { asset, price, direction, numOrders, distance, total } = req.body;
+    const { asset, price, direction, numOrders, distance, volume_distance, total } = req.body;
     
     try {
         const pairInfo = getLeverage(asset);
@@ -57,10 +57,10 @@ router.post('/api/batch-order', async (req, res) => {
         const priceDecimals = getPairInfo(asset).priceDecimals;
         const orders = [];
         
-        // Calculate the sum of the geometric progression factors
+        // Calculate the sum of the geometric progression factors for volume
         let sumFactors = 0;
         for (let i = 0; i < numOrders; i++) {
-            sumFactors += Math.pow(1 + distance / 100, i);
+            sumFactors += Math.pow(1 + volume_distance / 100, i);
         }
         
         // Calculate the base price per order that will result in the desired total
@@ -70,8 +70,8 @@ router.post('/api/batch-order', async (req, res) => {
             const orderPrice = direction === 'buy' 
                 ? price / Math.pow(1 + distance / 100, i)
                 : price * Math.pow(1 + distance / 100, i);
-            // Calculate this order's portion of the total using the geometric progression
-            const pricePerOrder = basePrice * Math.pow(1 + distance / 100, i);
+            // Calculate this order's portion of the total using the geometric progression with volume_distance
+            const pricePerOrder = basePrice * Math.pow(1 + volume_distance / 100, i);
             const volume = pricePerOrder / orderPrice;
             
             orders.push({
