@@ -131,7 +131,7 @@ function startPriceUpdates(pair) {
         clearInterval(priceUpdateInterval);
     }
     updatePrice(pair);
-    priceUpdateInterval = setInterval(() => updatePrice(pair), 60000);
+    priceUpdateInterval = setInterval(() => updatePrice(pair), 600000); // 10 minutes
 }
 
 async function fetchOpenOrders() {
