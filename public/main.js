@@ -109,7 +109,7 @@ async function updatePrice(pair) {
         
         const result = data.result[Object.keys(data.result)[0]];
         const lastPrice = parseFloat(result.c[0]);
-        document.getElementById('currentPrice').textContent = `Current price: $${lastPrice}`;
+        document.getElementById('currentPrice').textContent = `$${lastPrice}`;
 
         // Get the direction and set price accordingly
         const direction = document.getElementById('direction').value;
@@ -269,22 +269,14 @@ function populateAssetOptions() {
     }).join('');
 
     assetSelect.addEventListener('change', function() {
-        const info = window.getPairInfo(this.value);
-        if (info) {
-            document.getElementById('price').value = info.defaultPrice;
-            calculateOrders();
-        }
+        calculateOrders();
         if (priceUpdateInterval) {
             clearInterval(priceUpdateInterval);
         }
         startPriceUpdates(this.value);
     });
 
-    const initialInfo = window.getPairInfo(assetSelect.value);
-    if (initialInfo) {
-        document.getElementById('price').value = initialInfo.defaultPrice;
-        calculateOrders();
-    }
+    calculateOrders();
 }
 
 // Initialize everything when the DOM is loaded
@@ -346,11 +338,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     document.getElementById('resetButton').addEventListener('click', () => {
         document.getElementById('orderForm').reset();
-        const info = window.getPairInfo(document.getElementById('asset').value);
-        if (info) {
-            document.getElementById('price').value = info.defaultPrice;
-            calculateOrders();
-        }
+        calculateOrders();
     });
 
     // Tab event listeners

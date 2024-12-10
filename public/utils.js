@@ -4,43 +4,41 @@ const TRADING_PAIRS = {
     'BTC/USD': {
         name: 'Bitcoin',
         leverage: '5',
-        defaultPrice: '80042',
+        priceDecimals: 1
+    },
+    'ETH/USD': {
+        name: 'Ethereum',
+        leverage: '5',
         priceDecimals: 1
     },
     'XRP/USD': {
         name: 'Ripple',
         leverage: '5',
-        defaultPrice: '1.952',
         priceDecimals: 5
     },
     'DOGE/USD': {
         name: 'Dogecoin',
         leverage: '5',
-        defaultPrice: '0.303',
         priceDecimals: 6
     },
     'SOL/USD': {
         name: 'Solana',
         leverage: '4',
-        defaultPrice: '195.1',
         priceDecimals: 2
     },
     'PEPE/USD': {
         name: 'Pepe',
         leverage: '3',
-        defaultPrice: '0.0000202',
         priceDecimals: 8
     },
     'ADA/USD': {
         name: 'Cardano',
         leverage: '3',
-        defaultPrice: '0.911',
         priceDecimals: 6
     },
     'XLM/USD': {
         name: 'Stellar',
         leverage: '2',
-        defaultPrice: '0.341',
         priceDecimals: 6
     }
 };
