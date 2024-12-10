@@ -67,6 +67,7 @@
                                 <select class="form-control" id="asset" required>
                                 </select>
                             </div>
+                            <div id="currentPrice" class="mt-2 text-muted"></div>
                             <div class="form-group">
                                 <label for="direction">Direction:</label>
                                 <select class="form-control" id="direction" required>
@@ -457,6 +458,7 @@
                     document.getElementById('price').value = info.defaultPrice;
                     calculateOrders();
                 }
+                startPriceUpdates(this.value);
             });
 
             // Set initial price
@@ -467,8 +469,38 @@
             }
         }
 
+        let priceUpdateInterval;
+
+        async function updatePrice(pair) {
+            try {
+                const krakenPair = pair.replace('BTC/', 'XBT').replace('/', '');
+                const response = await fetch(`/api/ticker/${krakenPair}`);
+                const data = await response.json();
+                
+                if (data.error && data.error.length > 0) {
+                    document.getElementById('currentPrice').textContent = 'Error fetching price';
+                    return;
+                }
+                
+                const result = data.result[Object.keys(data.result)[0]];
+                const lastPrice = result.c[0];
+                document.getElementById('currentPrice').textContent = `Current Price: ${lastPrice}`;
+            } catch (error) {
+                document.getElementById('currentPrice').textContent = 'Error fetching price';
+            }
+        }
+
+        function startPriceUpdates(pair) {
+            if (priceUpdateInterval) {
+                clearInterval(priceUpdateInterval);
+            }
+            updatePrice(pair);
+            priceUpdateInterval = setInterval(() => updatePrice(pair), 60000);
+        }
+
         // Call it when page loads
         populateAssetOptions();
+        startPriceUpdates(document.getElementById('asset').value);
     </script>
 
     <script>

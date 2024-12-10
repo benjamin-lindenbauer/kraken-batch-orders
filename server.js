@@ -208,6 +208,19 @@ router.post('/api/cancel-all', async (req, res) => {
     }
 });
 
+router.get('/api/ticker/:pair', async (req, res) => {
+    try {
+        const pair = req.params.pair;
+        console.log('Fetching ticker for pair:', pair);
+        const response = await axios.get(`https://api.kraken.com/0/public/Ticker?pair=${pair}`);
+        console.log('Ticker response:', response.data);
+        res.json(response.data);
+    } catch (error) {
+        console.error('Error fetching ticker:', error.message);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // For local development
 if (process.env.NODE_ENV !== 'production') {
     const PORT = process.env.PORT || 3000;
