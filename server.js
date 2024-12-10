@@ -36,10 +36,22 @@ app.post('/api/batch-order', async (req, res) => {
 
         const priceDecimals = getPairInfo(asset).priceDecimals;
         const orders = [];
-        const pricePerOrder = total / numOrders;
+        
+        // Calculate the sum of the geometric progression factors
+        let sumFactors = 0;
+        for (let i = 0; i < numOrders; i++) {
+            sumFactors += Math.pow(1 + distance / 100, i);
+        }
+        
+        // Calculate the base price per order that will result in the desired total
+        const basePrice = total / sumFactors;
         
         for (let i = 0; i < numOrders; i++) {
-            const orderPrice = price * (1 - (i * distance / 100));
+            const orderPrice = direction === 'buy' 
+                ? price / (1 + (i * distance / 100))
+                : price * (1 - (i * distance / 100));
+            // Calculate this order's portion of the total using the geometric progression
+            const pricePerOrder = basePrice * Math.pow(1 + distance / 100, i);
             const volume = pricePerOrder / orderPrice;
             
             orders.push({

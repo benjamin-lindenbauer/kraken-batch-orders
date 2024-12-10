@@ -161,13 +161,24 @@
             }
 
             const orders = [];
-            const usdPerOrder = total / numOrders;
+            
+            // Calculate the sum of the geometric progression factors
+            let sumFactors = 0;
+            for (let i = 0; i < numOrders; i++) {
+                sumFactors += Math.pow(1 + distance / 100, i);
+            }
+            
+            // Calculate the base price that will result in the desired total
+            const basePrice = total / sumFactors;
             const adjustedDistance = direction === 'buy' ? -distance : distance;
-            const distanceMultiplier = 1 + (adjustedDistance / 100);
 
             for (let i = 0; i < numOrders; i++) {
-                const orderPrice = price * Math.pow(distanceMultiplier, i);
-                const volume = (usdPerOrder / orderPrice);
+                const orderPrice = direction === 'buy'
+                    ? price / (1 + (i * distance / 100))
+                    : price * (1 - (i * distance / 100));
+                // Calculate this order's portion using geometric progression
+                const pricePerOrder = basePrice * Math.pow(1 + distance / 100, i);
+                const volume = pricePerOrder / orderPrice;
                 const totalUsd = orderPrice * volume;
                 
                 orders.push({
