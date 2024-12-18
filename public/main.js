@@ -39,8 +39,7 @@ function calculateOrders() {
         orders.push({
             orderPrice: orderPrice,
             volume: volume,
-            total: totalUsd,
-            leverage: window.getLeverage(asset)
+            total: totalUsd
         });
     }
 

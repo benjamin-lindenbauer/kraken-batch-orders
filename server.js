@@ -30,7 +30,7 @@ app.use(express.static('public', {
 }));
 
 // Import utils
-const { getLeverage, getPairInfo } = require('./public/utils.js');
+const { getPairInfo } = require('./public/utils.js');
 
 function getMessageSignature(path, postData, secret, nonce) {
     const message = postData;
@@ -49,12 +49,12 @@ router.post('/api/batch-order', async (req, res) => {
     const { asset, price, direction, numOrders, distance, volume_distance, total } = req.body;
     
     try {
-        const pairInfo = getLeverage(asset);
+        const pairInfo = getPairInfo(asset);
         if (!pairInfo) {
             return res.status(400).json({ error: ['Invalid trading pair'] });
         }
 
-        const priceDecimals = getPairInfo(asset).priceDecimals;
+        const priceDecimals = pairInfo.priceDecimals;
         const orders = [];
         
         // Calculate the sum of the geometric progression factors for volume
@@ -82,7 +82,7 @@ router.post('/api/batch-order', async (req, res) => {
                 cl_ord_id: `${Date.now()}-${i}`,
                 volume: volume.toFixed(8),
                 pair: asset,
-                leverage: getLeverage(asset)
+                leverage: pairInfo.leverage
             });
         }
 

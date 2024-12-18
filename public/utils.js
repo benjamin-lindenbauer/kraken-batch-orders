@@ -7,6 +7,11 @@ const TRADING_PAIRS = {
         leverage: '5',
         priceDecimals: 1
     },
+    'BTC/CHF': {
+        symbol: 'BTC',
+        name: 'Bitcoin',
+        priceDecimals: 1
+    },
     'ETH/USD': {
         symbol: 'ETH',
         name: 'Ethereum',
@@ -51,10 +56,6 @@ const TRADING_PAIRS = {
     }
 };
 
-const getLeverage = (asset) => {
-    return TRADING_PAIRS[asset]?.leverage || '2';
-};
-
 // Get all supported assets
 const getSupportedAssets = () => {
     return Object.keys(TRADING_PAIRS);
@@ -67,12 +68,10 @@ const getPairInfo = (asset) => {
 
 // Support both CommonJS and ES modules
 if (typeof exports !== 'undefined') {
-    exports.getLeverage = getLeverage;
     exports.getSupportedAssets = getSupportedAssets;
     exports.getPairInfo = getPairInfo;
     exports.TRADING_PAIRS = TRADING_PAIRS;
 } else {
-    window.getLeverage = getLeverage;
     window.getSupportedAssets = getSupportedAssets;
     window.getPairInfo = getPairInfo;
     window.TRADING_PAIRS = TRADING_PAIRS;
