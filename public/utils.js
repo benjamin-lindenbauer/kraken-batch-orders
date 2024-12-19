@@ -36,6 +36,12 @@ const TRADING_PAIRS = {
         leverage: '4',
         priceDecimals: 2
     },
+    'LINK/USD': {
+        symbol: 'LINK',
+        name: 'Chainlink',
+        leverage: '3',
+        priceDecimals: 5
+    },
     'PEPE/USD': {
         symbol: 'PEPE',
         name: 'Pepe',
