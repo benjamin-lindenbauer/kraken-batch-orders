@@ -137,9 +137,11 @@ function startPriceUpdates(pair) {
 async function fetchOpenOrders() {
     const tbody = document.getElementById('openOrdersTable');
     const errorDiv = document.getElementById('orderError');
+    const orderCountSpan = document.getElementById('openOrdersCount');
     errorDiv.style.display = 'none';
     
     tbody.innerHTML = '<tr><td colspan="6" class="text-center">Loading orders...</td></tr>';
+    orderCountSpan.textContent = '';
     
     try {
         const response = await fetch('/api/open-orders', {
@@ -153,16 +155,21 @@ async function fetchOpenOrders() {
         
         if (result.error && result.error.length > 0) {
             tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${result.error.join(', ')}</td></tr>`;
+            orderCountSpan.textContent = '0 ';
             return;
         }
 
-        if (!result.result.open || Object.keys(result.result.open).length === 0) {
+        const openOrders = result.result.open || {};
+        const orderCount = Object.keys(openOrders).length;
+        orderCountSpan.textContent = `${orderCount} `;
+
+        if (orderCount === 0) {
             tbody.innerHTML = '<tr><td colspan="6" class="text-center">No open orders</td></tr>';
             return;
         }
 
         // Convert orders object to array and sort by price in descending order
-        const sortedOrders = Object.entries(result.result.open)
+        const sortedOrders = Object.entries(openOrders)
             .sort(([, a], [, b]) => parseFloat(b.descr.price) - parseFloat(a.descr.price));
 
         tbody.innerHTML = sortedOrders.map(([orderId, order]) => `
