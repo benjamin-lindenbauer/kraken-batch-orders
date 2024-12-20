@@ -9,7 +9,7 @@ const TRADING_PAIRS = {
     },
     'BTC/CHF': {
         symbol: 'BTC',
-        name: 'Bitcoin',
+        name: 'Bitcoin (Spot)',
         priceDecimals: 1
     },
     'ETH/USD': {

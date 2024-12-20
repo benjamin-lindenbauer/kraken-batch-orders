@@ -215,8 +215,14 @@ async function cancelOrder(txid, rowElement) {
 
         rowElement.remove();
         const tbody = document.getElementById('openOrdersTable');
-        if (tbody.children.length === 0) {
+        const remainingOrders = tbody.querySelectorAll('tr:not([colspan])').length;
+        const orderCountSpan = document.getElementById('openOrdersCount');
+        
+        if (remainingOrders === 0) {
             tbody.innerHTML = '<tr><td colspan="6" class="text-center">No open orders</td></tr>';
+            orderCountSpan.textContent = '0 ';
+        } else {
+            orderCountSpan.textContent = `${remainingOrders} `;
         }
     } catch (error) {
         errorDiv.textContent = 'Error canceling order: ' + error.message;
