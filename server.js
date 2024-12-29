@@ -235,6 +235,40 @@ router.get('/api/ticker/:pair', async (req, res) => {
     }
 });
 
+router.get('/api/balances', async (req, res) => {
+    try {
+        const nonce = Date.now().toString();
+        const path = '/0/private/Balance';
+        const data = {
+            nonce: nonce
+        };
+
+        const postData = new URLSearchParams(data).toString();
+        const signature = getMessageSignature(path, postData, process.env.KRAKEN_API_SECRET, nonce);
+
+        const response = await fetch('https://api.kraken.com' + path, {
+            method: 'POST',
+            headers: {
+                'API-Key': process.env.KRAKEN_API_KEY,
+                'API-Sign': signature,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: postData
+        });
+
+        const result = await response.json();
+        
+        if (result.error && result.error.length > 0) {
+            res.status(400).json({ error: result.error });
+            return;
+        }
+        
+        res.json(result);
+    } catch (error) {
+        res.status(500).json({ error: [error.message] });
+    }
+});
+
 // For local development
 if (process.env.NODE_ENV !== 'production') {
     const PORT = process.env.PORT || 3000;

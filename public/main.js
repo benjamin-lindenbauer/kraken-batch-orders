@@ -1,5 +1,6 @@
 // Global variables
 let priceUpdateInterval;
+let balanceUpdateInterval;
 
 // Functions
 function calculateOrders() {
@@ -291,23 +292,63 @@ function populateAssetOptions() {
     calculateOrders();
 }
 
+async function updateBalances() {
+    const balanceDisplay = document.getElementById('balanceDisplay');
+    
+    try {
+        const response = await fetch('/api/balances');
+        const data = await response.json();
+        
+        if (data.error && data.error.length > 0) {
+            balanceDisplay.innerHTML = '<span class="text-danger">Error loading balances</span>';
+            return;
+        }
+
+        const balances = data.result;
+        let balanceHtml = '<div class="small">';
+        
+        // Filter and sort balances
+        const significantBalances = Object.entries(balances)
+            .filter(([, amount]) => parseFloat(amount) > 0.001)
+            .sort(([, a], [, b]) => parseFloat(b) - parseFloat(a));
+
+        // Display top 3 balances
+        significantBalances.slice(0, 3).forEach(([currency, amount]) => {
+            balanceHtml += `<div>${parseFloat(amount).toFixed(4)} ${currency}</div>`;
+        });
+
+        if (significantBalances.length > 3) {
+            balanceHtml += `<div>+${significantBalances.length - 3} more</div>`;
+        }
+
+        balanceHtml += '</div>';
+        balanceDisplay.innerHTML = balanceHtml;
+    } catch (error) {
+        balanceDisplay.innerHTML = '<span class="text-danger">Error loading balances</span>';
+    }
+}
+
 // Initialize everything when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     // Form input event listeners
     document.querySelectorAll('#orderForm input, #orderForm select').forEach(element => {
-        element.addEventListener('change', (e) => {
-            if (e.target.id === 'direction') {
-                updatePrice(document.getElementById('asset').value);
-            } else if (e.target.id !== 'asset') {  // Skip asset changes as they're handled separately
-                calculateOrders();
-            }
-        });
-        element.addEventListener('input', (e) => {
-            if (e.target.id !== 'asset') {  // Skip asset changes as they're handled separately
-                calculateOrders();
-            }
-        });
+        element.addEventListener('change', calculateOrders);
     });
+
+    // Initialize asset options
+    populateAssetOptions();
+
+    // Start balance updates
+    updateBalances();
+    balanceUpdateInterval = setInterval(updateBalances, 60000); // Update every minute
+
+    // Start price updates
+    startPriceUpdates(document.getElementById('asset').value);
+
+    // Handle tab changes
+    document.getElementById('open-tab').addEventListener('click', fetchOpenOrders);
+    document.getElementById('refreshOrders').addEventListener('click', fetchOpenOrders);
+    document.getElementById('cancelAll').addEventListener('click', cancelAllOrders);
 
     // Button event listeners
     document.getElementById('createButton').addEventListener('click', async () => {
@@ -352,14 +393,4 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('orderForm').reset();
         calculateOrders();
     });
-
-    // Tab event listeners
-    const openOrdersTab = document.getElementById('open-tab');
-    openOrdersTab.addEventListener('shown.bs.tab', fetchOpenOrders);
-    document.getElementById('refreshOrders').addEventListener('click', fetchOpenOrders);
-    document.getElementById('cancelAll').addEventListener('click', cancelAllOrders);
-
-    // Initialize the app
-    populateAssetOptions();
-    startPriceUpdates(document.getElementById('asset').value);
 });
