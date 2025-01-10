@@ -87,8 +87,8 @@ function calculateOrders() {
                 <tr>
                     <th>#</th>
                     <th>Price</th>
-                    <th>Volume</th>
-                    <th>Volume USD</th>
+                    <th>Order Volume</th>
+                    <th>Order Volume USD</th>
                 </tr>
             </thead>
             <tbody>
@@ -117,9 +117,11 @@ async function updatePrice(pair) {
         const pairInfo = window.getPairInfo(pair);
         const priceDecimals = pairInfo.priceDecimals;
         if (direction === 'buy') {
-            priceInput.value = (lastPrice * 0.9).toFixed(priceDecimals); // 10% below current price
+            const offset = 1 - (document.getElementById('priceOffset').value / 100);
+            priceInput.value = (lastPrice * offset).toFixed(priceDecimals); // Below current price
         } else {
-            priceInput.value = (lastPrice * 1.1).toFixed(priceDecimals); // 10% above current price
+            const offset = 1 + (document.getElementById('priceOffset').value / 100);
+            priceInput.value = (lastPrice * offset).toFixed(priceDecimals); // Above current price
         }
         calculateOrders(); // Recalculate orders with new price
     } catch (error) {
@@ -289,6 +291,9 @@ function populateAssetOptions() {
         startPriceUpdates(this.value);
     });
 
+    document.getElementById('direction').addEventListener('change', updateFirstOrderPrice);
+    document.getElementById('priceOffset').addEventListener('input', updateFirstOrderPrice);
+
     calculateOrders();
 }
 
@@ -326,6 +331,24 @@ async function updateBalances() {
     } catch (error) {
         balanceDisplay.innerHTML = '<span class="text-danger">Error loading balances</span>';
     }
+}
+
+function updateFirstOrderPrice() {
+    const direction = document.getElementById('direction').value;
+    const priceInput = document.getElementById('price');
+    const currentPrice = parseFloat(document.getElementById('currentPrice').textContent.replace('$', ''));
+    const pair = document.getElementById('asset').value;
+    const pairInfo = window.getPairInfo(pair);
+    const priceDecimals = pairInfo.priceDecimals;
+
+    if (direction === 'buy') {
+        const offset = 1 - (document.getElementById('priceOffset').value / 100);
+        priceInput.value = (currentPrice * offset).toFixed(priceDecimals); // Below current price
+    } else {
+        const offset = 1 + (document.getElementById('priceOffset').value / 100);
+        priceInput.value = (currentPrice * offset).toFixed(priceDecimals); // Above current price
+    }
+    calculateOrders();
 }
 
 // Initialize everything when the DOM is loaded
@@ -387,10 +410,5 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             document.getElementById('result').innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
         }
-    });
-
-    document.getElementById('resetButton').addEventListener('click', () => {
-        document.getElementById('orderForm').reset();
-        calculateOrders();
     });
 });
