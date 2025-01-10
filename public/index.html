@@ -63,8 +63,9 @@
             <div class="tab-pane fade show active" id="create" role="tabpanel">
                 <form id="orderForm" class="mb-2">
                     <div class="card">
-                        <div class="card-header">
-                            <h5 class="mb-0">Create scale orders</h5>
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Batch order creation</h5>
+                            <button id="createButton" class="btn btn-success">Create Orders</button>
                         </div>
                         <div class="card-body">
                             <!-- Row 1: Trading pair and current price -->
@@ -84,7 +85,7 @@
                                 <div class="col-4">
                                     <div class="input-group">
                                         <span class="input-group-text">Price Offset %</span>
-                                        <input type="number" class="form-control" id="priceOffset" value="5.0" min="0.0" max="10.0" step="0.1" required>
+                                        <input type="number" class="form-control" id="priceOffset" value="2.5" min="0.0" max="10.0" step="0.1" required>
                                     </div>
                                 </div>
                             </div>
@@ -109,7 +110,7 @@
                                 <div class="col-4">
                                     <div class="input-group">
                                         <span class="input-group-text">Total USD</span>
-                                        <input type="number" class="form-control" id="total" step="1000" value="35000" min="1000" required>
+                                        <input type="number" class="form-control" id="total" step="1000" value="25000" min="1000" required>
                                     </div>
                                 </div>
                             </div>
@@ -125,7 +126,7 @@
                                 <div class="col-4">
                                     <div class="input-group">
                                         <span class="input-group-text">Order Price Distance %</span>
-                                        <input type="number" class="form-control" id="distance" step="0.1" value="2.0" min="0.1" max="10.0" required>
+                                        <input type="number" class="form-control" id="distance" step="0.1" value="1.0" min="0.1" max="10.0" required>
                                     </div>
                                 </div>
                                 <div class="col-4">
@@ -142,9 +143,6 @@
                 <div id="previewSection">
                     <div class="table-responsive">
                         <div id="previewTable"></div>
-                    </div>
-                    <div class="action-buttons">
-                        <button id="createButton" class="btn btn-success">Create Orders</button>
                     </div>
                 </div>
 
