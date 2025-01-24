@@ -273,7 +273,9 @@ router.get('/api/balances', async (req, res) => {
 if (process.env.NODE_ENV !== 'production') {
     const PORT = process.env.PORT || 3000;
     app.use('/', router);
-    app.listen(PORT, () => {});
+    app.listen(PORT, () => {
+        console.log(`Server is running on port ${PORT}`);
+    });
 }
 
 // Export the router for Netlify Functions
