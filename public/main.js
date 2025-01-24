@@ -118,9 +118,11 @@ async function updatePrice(pair) {
         const priceDecimals = pairInfo.priceDecimals;
         if (direction === 'buy') {
             const offset = 1 - (document.getElementById('priceOffset').value / 100);
+            priceInput.setAttribute('step', priceDecimals.toString());
             priceInput.value = (lastPrice * offset).toFixed(priceDecimals); // Below current price
         } else {
             const offset = 1 + (document.getElementById('priceOffset').value / 100);
+            priceInput.setAttribute('step', priceDecimals.toString());
             priceInput.value = (lastPrice * offset).toFixed(priceDecimals); // Above current price
         }
         calculateOrders(); // Recalculate orders with new price
@@ -315,11 +317,12 @@ async function updateBalances() {
         // Filter and sort balances
         const significantBalances = Object.entries(balances)
             .filter(([, amount]) => parseFloat(amount) > 0.001)
+            .map(([currency, amount]) => [currency.replace('ZUSD', 'USD').replace('XXBT', 'XBT'), amount])
             .sort(([, a], [, b]) => parseFloat(b) - parseFloat(a));
 
         // Display top 3 balances
         significantBalances.slice(0, 3).forEach(([currency, amount]) => {
-            balanceHtml += `<div>${parseFloat(amount).toFixed(4)} ${currency}</div>`;
+            balanceHtml += `<div>${parseFloat(amount).toFixed(currency === 'XBT' ? 4 : 2)} ${currency}</div>`;
         });
 
         if (significantBalances.length > 3) {
