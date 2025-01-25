@@ -43,10 +43,13 @@
     <div class="container">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2 class="mb-0">Kraken Batch Orders</h2>
-            <div id="balanceDisplay" class="text-end">
-                <div class="spinner-border spinner-border-sm" role="status">
-                    <span class="visually-hidden">Loading balances...</span>
+            <div>
+                <div id="balanceDisplay" class="text-end">
+                    <div class="spinner-border spinner-border-sm" role="status">
+                        <span class="visually-hidden">Loading balances...</span>
+                    </div>
                 </div>
+                <div class="text-end" id="totalBalance"></div>
             </div>
         </div>
         
@@ -109,7 +112,7 @@
                                 </div>
                                 <div class="col-4">
                                     <div class="input-group">
-                                        <span class="input-group-text">Total USD</span>
+                                        <span class="input-group-text">Total $ (5x)</span>
                                         <input type="number" class="form-control" id="total" step="100" value="25000" min="100" required>
                                     </div>
                                 </div>
@@ -192,7 +195,7 @@
                                 <th>Type</th>
                                 <th>Price</th>
                                 <th>Volume</th>
-                                <th>USD Value</th>
+                                <th>$ Value</th>
                                 <th>Action</th>
                             </tr>
                         </thead>

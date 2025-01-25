@@ -32,6 +32,14 @@ app.use(express.static('public', {
 // Import utils
 const { getPairInfo } = require('./public/utils.js');
 
+let lastNonce = Math.floor(Date.now() * 1000); // Microsecond precision
+
+function generateNonce() {
+    const newNonce = Math.max(Date.now() * 1000, lastNonce + 1);
+    lastNonce = newNonce;
+    return newNonce.toString();
+}
+
 function getMessageSignature(path, postData, secret, nonce) {
     const message = postData;
     const secret_buffer = Buffer.from(secret, 'base64');
@@ -94,7 +102,7 @@ router.post('/api/batch-order', async (req, res) => {
             orders.push(order);
         }
 
-        const nonce = Date.now().toString();
+        const nonce = generateNonce();
         const path = '/0/private/AddOrderBatch';
 
         const requestData = {
@@ -130,7 +138,7 @@ router.post('/api/batch-order', async (req, res) => {
 router.post('/api/cancel-order', async (req, res) => {
     try {
         const { txid } = req.body;
-        const nonce = Date.now().toString();
+        const nonce = generateNonce();
         const path = '/0/private/CancelOrder';
         const data = {
             nonce: nonce,
@@ -165,7 +173,7 @@ router.post('/api/cancel-order', async (req, res) => {
 
 router.get('/api/open-orders', async (req, res) => {
     try {
-        const nonce = Date.now().toString();
+        const nonce = generateNonce();
         const path = '/0/private/OpenOrders';
         const data = {
             nonce: nonce
@@ -200,7 +208,7 @@ router.get('/api/open-orders', async (req, res) => {
 // Add the cancel-all endpoint
 router.post('/api/cancel-all', async (req, res) => {
     try {
-        const nonce = Date.now().toString();
+        const nonce = generateNonce();
         const path = '/0/private/CancelAll';
         const postData = `nonce=${nonce}`;
         
@@ -245,7 +253,7 @@ router.get('/api/ticker/:pair', async (req, res) => {
 
 router.get('/api/balances', async (req, res) => {
     try {
-        const nonce = Date.now().toString();
+        const nonce = generateNonce();
         const path = '/0/private/Balance';
         const data = {
             nonce: nonce
@@ -273,6 +281,37 @@ router.get('/api/balances', async (req, res) => {
         
         res.json(result);
     } catch (error) {
+        res.status(500).json({ error: [error.message] });
+    }
+});
+
+router.post('/api/trade-balance', async (req, res) => {
+    try {
+        const { asset } = req.body;
+        const nonce = generateNonce();
+        const path = '/0/private/TradeBalance';
+        const data = {
+            nonce: nonce,
+            asset: asset
+        };
+        
+        const postData = new URLSearchParams(data).toString();
+        const signature = getMessageSignature(path, postData, process.env.KRAKEN_API_SECRET, nonce);
+        
+        const response = await axios({
+            method: 'POST',
+            url: `https://api.kraken.com${path}`,
+            headers: {
+                'API-Key': process.env.KRAKEN_API_KEY,
+                'API-Sign': signature,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            data: postData
+        });
+
+        res.json(response.data);
+    } catch (error) {
+        console.error('Error fetching trade balance:', error.response?.data || error.message);
         res.status(500).json({ error: [error.message] });
     }
 });

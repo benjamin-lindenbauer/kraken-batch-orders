@@ -77,7 +77,7 @@ function calculateOrders() {
             <td><strong>${totalRange.toFixed(2)}% Total range</strong></td>
             <td><strong>$${(totalValue / totalCoins).toFixed(priceDecimals)} Average price</strong></td>
             <td><strong>${totalCoins.toFixed(6)} Total volume</strong></td>
-            <td><strong>$${totalValue.toFixed(2)} Total USD</strong></td>
+            <td><strong>$${totalValue.toFixed(2)} Total $</strong></td>
         </tr>
     `;
 
@@ -88,7 +88,7 @@ function calculateOrders() {
                     <th>#</th>
                     <th>Price</th>
                     <th>Order Volume</th>
-                    <th>Order Volume USD</th>
+                    <th>Order Volume $</th>
                 </tr>
             </thead>
             <tbody>
@@ -308,6 +308,33 @@ function populateAssetOptions() {
     calculateOrders();
 }
 
+async function getTradeBalance() {
+    try {
+        const response = await fetch('/api/trade-balance', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                asset: 'ZUSD'
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.error && data.error.length > 0) {
+            console.error('Error fetching trade balance:', data.error);
+            return;
+        }
+
+        // Get the trade balance and update the total input field
+        document.getElementById('totalBalance').textContent = `Total $${parseInt(data.result.eb)}`;
+        document.getElementById('total').value = parseInt(data.result.tb) * 5;
+    } catch (error) {
+        console.error('Error fetching trade balance:', error);
+    }
+}
+
 async function updateBalances() {
     const balanceDisplay = document.getElementById('balanceDisplay');
     
@@ -330,13 +357,9 @@ async function updateBalances() {
             .sort(([, a], [, b]) => parseFloat(b) - parseFloat(a));
 
         // Display top 3 balances
-        significantBalances.slice(0, 3).forEach(([currency, amount]) => {
-            balanceHtml += `<div>${parseFloat(amount).toFixed(currency === 'XBT' ? 4 : 2)} ${currency}</div>`;
+        significantBalances.forEach(([currency, amount]) => {
+            balanceHtml += `${parseFloat(amount).toFixed(currency === 'XBT' ? 4 : 2)} ${currency}, `;
         });
-
-        if (significantBalances.length > 3) {
-            balanceHtml += `<div>+${significantBalances.length - 3} more</div>`;
-        }
 
         balanceHtml += '</div>';
         balanceDisplay.innerHTML = balanceHtml;
@@ -376,6 +399,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Start balance updates
     updateBalances();
     balanceUpdateInterval = setInterval(updateBalances, 60000); // Update every minute
+
+    // Get trade balance
+    getTradeBalance();
 
     // Start price updates
     startPriceUpdates(document.getElementById('asset').value);
