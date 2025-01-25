@@ -296,6 +296,15 @@ function populateAssetOptions() {
     document.getElementById('direction').addEventListener('change', updateFirstOrderPrice);
     document.getElementById('priceOffset').addEventListener('input', updateFirstOrderPrice);
 
+    // Stop Loss and Take Profit checkbox handlers
+    document.getElementById('enableStopLoss').addEventListener('change', function() {
+        document.getElementById('stop_loss').disabled = !this.checked;
+    });
+
+    document.getElementById('enableTakeProfit').addEventListener('change', function() {
+        document.getElementById('take_profit').disabled = !this.checked;
+    });
+
     calculateOrders();
 }
 
@@ -378,6 +387,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Button event listeners
     document.getElementById('createButton').addEventListener('click', async () => {
+        const stopLossEnabled = document.getElementById('enableStopLoss').checked;
+        const takeProfitEnabled = document.getElementById('enableTakeProfit').checked;
         const formData = {
             asset: document.getElementById('asset').value,
             price: document.getElementById('price').value,
@@ -385,7 +396,9 @@ document.addEventListener('DOMContentLoaded', () => {
             numOrders: document.getElementById('numOrders').value,
             distance: document.getElementById('distance').value,
             volume_distance: document.getElementById('volume_distance').value,
-            total: document.getElementById('total').value
+            total: document.getElementById('total').value,
+            stop_loss: stopLossEnabled ? document.getElementById('stop_loss').value : null,
+            take_profit: takeProfitEnabled ? document.getElementById('take_profit').value : null
         };
 
         try {

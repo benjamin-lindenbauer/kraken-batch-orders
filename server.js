@@ -46,7 +46,7 @@ function getMessageSignature(path, postData, secret, nonce) {
 const router = express.Router();
 
 router.post('/api/batch-order', async (req, res) => {
-    const { asset, price, direction, numOrders, distance, volume_distance, total } = req.body;
+    const { asset, price, direction, numOrders, distance, volume_distance, total, stop_loss, take_profit } = req.body;
     
     try {
         const pairInfo = getPairInfo(asset);
@@ -73,17 +73,25 @@ router.post('/api/batch-order', async (req, res) => {
             // Calculate this order's portion of the total using the geometric progression with volume_distance
             const pricePerOrder = basePrice * Math.pow(1 + volume_distance / 100, i);
             const volume = pricePerOrder / orderPrice;
-            
-            orders.push({
+            const order = {
                 ordertype: "limit",
                 price: orderPrice.toFixed(priceDecimals),
                 timeinforce: "GTC",
                 type: direction,
-                cl_ord_id: `${Date.now()}-${i}`,
+                //cl_ord_id: `${Date.now()}-${i}`,
                 volume: volume.toFixed(8),
                 pair: asset,
                 leverage: pairInfo.leverage
-            });
+            }
+            if (stop_loss) order.close = {
+                ordertype: "stop-loss",
+                price: (orderPrice / (1 + stop_loss / 100)).toFixed(priceDecimals)
+            }
+            if (take_profit) order.close = {
+                ordertype: "take-profit",
+                price: (orderPrice * (1 + take_profit / 100)).toFixed(priceDecimals)
+            }
+            orders.push(order);
         }
 
         const nonce = Date.now().toString();

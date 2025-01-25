@@ -116,7 +116,7 @@
                             </div>
 
                             <!-- Row 3: Price of First Order, Price Distance, Volume Increase -->
-                            <div class="row align-items-center">
+                            <div class="row align-items-center mb-3">
                                 <div class="col-4">
                                     <div class="input-group">
                                         <span class="input-group-text">First Order Price</span>
@@ -133,6 +133,28 @@
                                     <div class="input-group">
                                         <span class="input-group-text">Volume Increase %</span>
                                         <input type="number" class="form-control" id="volume_distance" step="1" value="10" min="1" max="30" required>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Row 4: Stop Loss, Take Profit -->
+                            <div class="row align-items-center">
+                                <div class="col-4">
+                                    <div class="input-group">
+                                        <div class="input-group-text">
+                                            <input class="form-check-input mt-0" type="checkbox" id="enableStopLoss">
+                                        </div>
+                                        <span class="input-group-text">Stop Loss %</span>
+                                        <input type="number" class="form-control" id="stop_loss" value="2.5" min="0.0" max="20.0" step="0.1" required disabled>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="input-group">
+                                        <div class="input-group-text">
+                                            <input class="form-check-input mt-0" type="checkbox" id="enableTakeProfit">
+                                        </div>
+                                        <span class="input-group-text">Take Profit %</span>
+                                        <input type="number" class="form-control" id="take_profit" value="2.5" min="0.0" max="20.0" step="0.1" required disabled>
                                     </div>
                                 </div>
                             </div>
