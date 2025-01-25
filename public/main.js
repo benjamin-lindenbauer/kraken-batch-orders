@@ -400,12 +400,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
             if (result.error && result.error.length > 0) {
                 document.getElementById('result').innerHTML = `<div class="alert alert-danger">${result.error.join(', ')}</div>`;
-            } else {
-                document.getElementById('result').innerHTML = `<div class="alert alert-success">Orders placed successfully!</div>`;
-                
+            } else {                
                 const orderDetails = document.getElementById('orderDetails');
                 const orderList = document.getElementById('orderList');
                 orderList.innerHTML = result.result.orders.map(order => 
+                    order.error ? `<div class="text-danger">${order.error}</div>` :
                     `<div>${order.descr.order}</div>`
                 ).join('');
                 orderDetails.style.display = 'block';
