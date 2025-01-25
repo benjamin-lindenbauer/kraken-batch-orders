@@ -118,11 +118,9 @@ async function updatePrice(pair) {
         const priceDecimals = pairInfo.priceDecimals;
         if (direction === 'buy') {
             const offset = 1 - (document.getElementById('priceOffset').value / 100);
-            priceInput.setAttribute('step', priceDecimals.toString());
             priceInput.value = (lastPrice * offset).toFixed(priceDecimals); // Below current price
         } else {
             const offset = 1 + (document.getElementById('priceOffset').value / 100);
-            priceInput.setAttribute('step', priceDecimals.toString());
             priceInput.value = (lastPrice * offset).toFixed(priceDecimals); // Above current price
         }
         calculateOrders(); // Recalculate orders with new price
@@ -294,6 +292,7 @@ function populateAssetOptions() {
     });
 
     document.getElementById('direction').addEventListener('change', updateFirstOrderPrice);
+    document.getElementById('asset').addEventListener('change', updateFirstOrderPrice)
     document.getElementById('priceOffset').addEventListener('input', updateFirstOrderPrice);
 
     // Stop Loss and Take Profit checkbox handlers
@@ -360,7 +359,8 @@ async function updateBalances() {
         significantBalances.forEach(([currency, amount]) => {
             balanceHtml += `${parseFloat(amount).toFixed(currency === 'XBT' ? 4 : 2)} ${currency}, `;
         });
-
+        //remove the last comma and space
+        balanceHtml = balanceHtml.slice(0, -2);
         balanceHtml += '</div>';
         balanceDisplay.innerHTML = balanceHtml;
     } catch (error) {
@@ -375,6 +375,8 @@ function updateFirstOrderPrice() {
     const pair = document.getElementById('asset').value;
     const pairInfo = window.getPairInfo(pair);
     const priceDecimals = pairInfo.priceDecimals;
+    //step should be 0.01 if priceDecimals is 2
+    priceInput.setAttribute('step', '0.' + '0'.repeat(priceDecimals - 1) + '1');
 
     if (direction === 'buy') {
         const offset = 1 - (document.getElementById('priceOffset').value / 100);
@@ -392,6 +394,14 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('#orderForm input, #orderForm select').forEach(element => {
         element.addEventListener('change', calculateOrders);
     });
+
+    // Update button text when number of orders changes
+    document.getElementById('numOrders').addEventListener('input', function() {
+        const createButton = document.getElementById('createButton');
+        createButton.textContent = `Create ${this.value} Orders`;
+    });
+    // Initialize button text
+    document.getElementById('createButton').textContent = `Create ${document.getElementById('numOrders').value} Orders`;
 
     // Initialize asset options
     populateAssetOptions();

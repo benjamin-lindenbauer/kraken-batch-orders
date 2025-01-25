@@ -95,7 +95,7 @@ router.post('/api/batch-order', async (req, res) => {
                 ordertype: "stop-loss",
                 price: (orderPrice / (1 + stop_loss / 100)).toFixed(priceDecimals)
             }
-            if (take_profit) order.close = {
+            else if (take_profit) order.close = {
                 ordertype: "take-profit",
                 price: (orderPrice * (1 + take_profit / 100)).toFixed(priceDecimals)
             }
