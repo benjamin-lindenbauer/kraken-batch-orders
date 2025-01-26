@@ -134,25 +134,30 @@ async function manageDailyOrders() {
 
         // Calculate order parameters
         const totalOrders = 5;
-        const priceDistance = 0.1; // First order price is 10% below current price
-        const orderDistance = 0.01; // Distance between orders
+        const basePriceDistance = 0.032; // Distance between base price and current price
+        const orderPriceDistance = 0.012; // Distance between orders
+        const baseVolume = 0.0315; // Volume of the first order
+        const volumeIncrease = 0.005; // Increase in volume for each additional order
+        const stopLossDistance = 0.05; // Distance between stop loss and order price
+        const leverage = 5;
+        const pair = 'BTC/USD';
         const orders = [];
 
         // Create buy orders below current price
-        for (let i = 1; i <= totalOrders; i++) {
-            const priceMultiplier = 1 + priceDistance + (orderDistance * i);
-            const limitPrice = (currentPrice / priceMultiplier);
-            const stopLossPrice = (parseFloat(limitPrice) * 0.95);
-            const volumePercentage = 0.04 + (i * 0.01);
-            const volume = ((tradeBalance * volumePercentage) / parseFloat(limitPrice));
+        for (let i = 0; i < totalOrders; i++) {
+            const priceDivider = 1 + basePriceDistance + (orderPriceDistance * i);
+            const limitPrice = (currentPrice / priceDivider);
+            const stopLossPrice = (parseFloat(limitPrice) * (1 - stopLossDistance));
+            const volumePercentage = baseVolume + (volumeIncrease * i);
+            const volume = ((tradeBalance * leverage * volumePercentage) / parseFloat(limitPrice));
 
             orders.push({
                 ordertype: 'limit',
                 type: 'buy',
-                pair: 'BTC/USD',
+                pair: pair,
                 price: limitPrice.toFixed(1),
                 volume: volume.toFixed(8),
-                leverage: 5,
+                leverage: leverage,
                 close: {
                     ordertype: 'stop-loss',
                     price: stopLossPrice.toFixed(1)
