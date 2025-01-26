@@ -422,7 +422,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('cancelAll').addEventListener('click', cancelAllOrders);
 
     // Button event listeners
-    document.getElementById('createButton').addEventListener('click', async () => {
+    document.getElementById('createButton').addEventListener('click', async (event) => {
+        event.preventDefault();
         const stopLossEnabled = document.getElementById('enableStopLoss').checked;
         const takeProfitEnabled = document.getElementById('enableTakeProfit').checked;
         const formData = {
