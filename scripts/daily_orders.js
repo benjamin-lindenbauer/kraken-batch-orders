@@ -9,6 +9,27 @@ const API_KEY = process.env.KRAKEN_API_KEY;
 const API_SECRET = process.env.KRAKEN_API_SECRET;
 const API_URL = 'https://api.kraken.com';
 
+const ORDERS_SETTINGS = {
+    BTC: {
+        basePriceDistance: 0.032,
+        orderPriceDistance: 0.012,
+        stopLossDistance: 0.05,
+        takeProfitDistance: 0.1,
+        leverage: 5,
+        priceDecimals: 1,
+        pair: 'BTC/USD'
+    },
+    XRP: {
+        basePriceDistance: 0.06,
+        orderPriceDistance: 0.014,
+        stopLossDistance: 0.075,
+        takeProfitDistance: 0.15,
+        leverage: 5,
+        priceDecimals: 5,
+        pair: 'XRP/USD'
+    }
+};
+
 if (!API_KEY || !API_SECRET) {
     console.error('Error: KRAKEN_API_KEY and KRAKEN_API_SECRET must be set in .env file');
     process.exit(1);
@@ -82,14 +103,11 @@ async function getPublicData(endpoint, params = {}) {
     }
 }
 
-async function submitOrderBatch(orders, validate = false) {
-    // Remove pair from individual orders and add it to the root request
-    const cleanedOrders = orders.map(({ pair, ...order }) => order);
-    
+async function submitOrderBatch(orders, pair = 'BTC/USD', validate = false) {
     try {
         const result = await krakenRequest('/0/private/AddOrderBatch', {
-            orders: cleanedOrders,
-            pair: 'BTC/USD',  // Root level pair parameter
+            orders: orders,
+            pair: pair,
             validate
         }, true);
         return result;
@@ -101,10 +119,17 @@ async function submitOrderBatch(orders, validate = false) {
 
 async function manageDailyOrders() {
     try {
+        // Get coin from command line argument, default to BTC
+        const coin = process.argv[2]?.toUpperCase() || 'BTC';
+        if (!ORDERS_SETTINGS[coin]) {
+            console.error(`Error: Invalid coin "${coin}". Supported coins are: ${Object.keys(ORDERS_SETTINGS).join(', ')}`);
+            process.exit(1);
+        }
+
         // Get trade balance
         const balanceInfo = await krakenRequest('/0/private/TradeBalance', { asset: 'ZUSD' });
-        const tradeBalance = parseInt(balanceInfo.tb);
-        console.log(`Trade balance: $${tradeBalance}`);
+        const tradeBalance = parseFloat(balanceInfo.tb);
+        console.log(`Trade balance: $${tradeBalance.toFixed(2)}`);
 
         // Get and cancel all buy orders
         const openOrders = await krakenRequest('/0/private/OpenOrders');
@@ -113,63 +138,67 @@ async function manageDailyOrders() {
         }
         
         const buyOrderIds = Object.entries(openOrders.open)
-            .filter(([_, order]) => order.descr.pair === 'XBTUSD' && order.descr.type === 'buy')
+            .filter(([_, order]) => order.descr.type === 'buy')
             .map(([orderId, _]) => orderId);
 
         console.log('Buy orders to cancel:', buyOrderIds);
 
         if (buyOrderIds.length > 0) {
             await krakenRequest('/0/private/CancelOrderBatch', {
-                orders: buyOrderIds  // Wrap in array as per API spec
+                orders: buyOrderIds
             }, true);
             console.log(`Cancelled ${buyOrderIds.length} buy orders`);
         } else {
             console.log('No buy orders to cancel');
         }
 
-        // Get current price for XBT/USD
-        const tickerInfo = await getPublicData('/0/public/Ticker', { pair: 'XXBTZUSD' });
-        const currentPrice = parseFloat(tickerInfo.XXBTZUSD.c[0]);
-        console.log(`Current BTC price: $${currentPrice}`);
+        // Get current price
+        const tickerPair = coin === 'BTC' ? 'XXBTZUSD' : `X${coin}ZUSD`;
+        const tickerInfo = await getPublicData('/0/public/Ticker', { pair: tickerPair });
+        const currentPrice = parseFloat(tickerInfo[tickerPair].c[0]);
+        console.log(`Current ${coin} price: $${currentPrice}`);
 
-        // Calculate order parameters
-        const totalOrders = 5;
-        const basePriceDistance = 0.032; // Distance between base price and current price
-        const orderPriceDistance = 0.012; // Distance between orders
+        // Settings
+        const totalOrders = 15;
+        const settings = ORDERS_SETTINGS[coin];
+        const basePriceDistance = settings.basePriceDistance;
+        const orderPriceDistance = settings.orderPriceDistance;
+        const stopLossDistance = settings.stopLossDistance;
+        const takeProfitDistance = settings.takeProfitDistance;
+        const leverage = settings.leverage;
+        const pair = settings.pair;
         const baseVolume = 0.0315; // Volume of the first order
         const volumeIncrease = 0.005; // Increase in volume for each additional order
-        const stopLossDistance = 0.05; // Distance between stop loss and order price
-        const leverage = 5;
-        const pair = 'BTC/USD';
+        const useStopLoss = true;
         const orders = [];
 
-        // Create buy orders below current price
+        // Create buy orders
         for (let i = 0; i < totalOrders; i++) {
             const priceDivider = 1 + basePriceDistance + (orderPriceDistance * i);
             const limitPrice = (currentPrice / priceDivider);
-            const stopLossPrice = (parseFloat(limitPrice) * (1 - stopLossDistance));
+            const stopLossPrice = (parseFloat(limitPrice) / (1 + stopLossDistance));
+            const takeProfitPrice = (parseFloat(limitPrice) * (1 + takeProfitDistance));
             const volumePercentage = baseVolume + (volumeIncrease * i);
             const volume = ((tradeBalance * leverage * volumePercentage) / parseFloat(limitPrice));
 
             orders.push({
                 ordertype: 'limit',
                 type: 'buy',
-                pair: pair,
-                price: limitPrice.toFixed(1),
+                price: limitPrice.toFixed(settings.priceDecimals),
                 volume: volume.toFixed(8),
                 leverage: leverage,
                 close: {
-                    ordertype: 'stop-loss',
-                    price: stopLossPrice.toFixed(1)
+                    ordertype: useStopLoss ? 'stop-loss' : 'take-profit',
+                    price: useStopLoss ? stopLossPrice.toFixed(settings.priceDecimals) : takeProfitPrice.toFixed(settings.priceDecimals)
                 }
             });
         }
 
-        console.log(`Created ${orders.length} orders`);
+        console.log(`Orders to be created: ${orders.map(o => `${o.type} ${coin} ${o.volume} @ $${o.price}`).join(', ')}`);
 
         // First validate the orders
         //await submitOrderBatch(orders, true);
-        const results = await submitOrderBatch(orders);
+        const results = await submitOrderBatch(orders, pair);
         console.log('Orders submitted successfully:', results);
         
     } catch (error) {
