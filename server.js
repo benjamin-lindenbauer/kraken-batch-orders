@@ -110,7 +110,7 @@ router.post('/api/batch-order', async (req, res) => {
             orders: orders,
             pair: asset,
             validate: false,
-            deadline: new Date(Date.now() + 30000).toISOString()
+            deadline: new Date(Date.now() + 30000).toISOString() // 30 seconds from now
         };
 
         const signature = getMessageSignature(path, JSON.stringify(requestData), process.env.KRAKEN_API_SECRET, nonce);
