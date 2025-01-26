@@ -22,7 +22,7 @@ jobs:
       run: npm install
       
     - name: Run order script
-      run: npm run daily-orders
+      run: node scripts/daily_orders.js
       env:
         KRAKEN_API_KEY: ${{ secrets.KRAKEN_API_KEY }}
         KRAKEN_API_SECRET: ${{ secrets.KRAKEN_API_SECRET }}
