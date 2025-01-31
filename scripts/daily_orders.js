@@ -141,7 +141,7 @@ async function manageDailyOrders() {
             .filter(([_, order]) => order.descr.type === 'buy')
             .map(([orderId, _]) => orderId);
 
-        console.log('Buy orders to cancel:', buyOrderIds);
+        console.log(buyOrderIds.length, 'Buy orders to cancel');
 
         if (buyOrderIds.length > 1) {
             await krakenRequest('/0/private/CancelOrderBatch', {
@@ -204,7 +204,8 @@ async function manageDailyOrders() {
         // First validate the orders
         //await submitOrderBatch(orders, true);
         const results = await submitOrderBatch(orders, pair);
-        console.log('Orders submitted successfully:', results);
+        console.log(`${results.orders.length} orders submitted successfully:`);
+        console.log(results.orders.map(o => o.descr.order + ', close: ' + o.descr.close));
         
     } catch (error) {
         console.error('Error managing daily orders:', error.message);
