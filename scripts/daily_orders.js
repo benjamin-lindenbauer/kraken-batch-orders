@@ -20,8 +20,8 @@ const ORDERS_SETTINGS = {
         pair: 'BTC/USD'
     },
     XRP: {
-        basePriceDistance: 0.06,
-        orderPriceDistance: 0.014,
+        basePriceDistance: 0.065,
+        orderPriceDistance: 0.015,
         stopLossDistance: 0.075,
         takeProfitDistance: 0.15,
         leverage: 5,
