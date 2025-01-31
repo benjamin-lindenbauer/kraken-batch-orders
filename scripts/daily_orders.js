@@ -143,11 +143,16 @@ async function manageDailyOrders() {
 
         console.log('Buy orders to cancel:', buyOrderIds);
 
-        if (buyOrderIds.length > 0) {
+        if (buyOrderIds.length > 1) {
             await krakenRequest('/0/private/CancelOrderBatch', {
                 orders: buyOrderIds
             }, true);
             console.log(`Cancelled ${buyOrderIds.length} buy orders`);
+        } else if (buyOrderIds.length === 1) {
+            await krakenRequest('/0/private/CancelOrder', {
+                txid: buyOrderIds[0]
+            }, true);
+            console.log('Cancelled 1 buy order');
         } else {
             console.log('No buy orders to cancel');
         }
