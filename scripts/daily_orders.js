@@ -11,19 +11,19 @@ const API_URL = 'https://api.kraken.com';
 
 const ORDERS_SETTINGS = {
     BTC: {
-        basePriceDistance: 0.032,
+        basePriceDistance: 0.062,
         orderPriceDistance: 0.012,
-        stopLossDistance: 0.05,
-        takeProfitDistance: 0.1,
+        stopLossDistance: 0.04,
+        takeProfitDistance: 0.08,
         leverage: 5,
         priceDecimals: 1,
         pair: 'BTC/USD'
     },
     XRP: {
-        basePriceDistance: 0.065,
+        basePriceDistance: 0.115,
         orderPriceDistance: 0.015,
-        stopLossDistance: 0.075,
-        takeProfitDistance: 0.15,
+        stopLossDistance: 0.06,
+        takeProfitDistance: 0.12,
         leverage: 5,
         priceDecimals: 5,
         pair: 'XRP/USD'
@@ -117,6 +117,13 @@ async function submitOrderBatch(orders, pair = 'BTC/USD', validate = false) {
     }
 }
 
+async function getHighestPrice(coin, since) {
+    const pair = coin === 'BTC' ? 'XXBTZUSD' : `X${coin}ZUSD`;
+    const ohlcData = await getPublicData('/0/public/OHLC', { pair, interval: 1440, since });
+    const prices = ohlcData[pair].map(entry => parseFloat(entry[2]));
+    return Math.max(...prices);
+}
+
 async function manageDailyOrders() {
     try {
         // Get coin from command line argument, default to BTC
@@ -163,11 +170,27 @@ async function manageDailyOrders() {
         const currentPrice = parseFloat(tickerInfo[tickerPair].c[0]);
         console.log(`Current ${coin} price: $${currentPrice}`);
 
+        if (isNaN(currentPrice)) {
+            console.error('Error: Could not fetch current price');
+            return;
+        }
+
+        // Get highest price of last 5 days
+        const fiveDaysAgo = Math.floor(Date.now() / 1000) - 5 * 24 * 60 * 60;
+        const highestPrice = await getHighestPrice(coin, fiveDaysAgo);
+        console.log(`Highest ${coin} price in last 5 days: $${highestPrice}`);
+
+        if (isNaN(highestPrice)) {
+            console.error('Error: Could not fetch highest price');
+            return;
+        }
+
         // Settings
         const totalOrders = 15;
         const settings = ORDERS_SETTINGS[coin];
         const basePriceDistance = settings.basePriceDistance;
         const orderPriceDistance = settings.orderPriceDistance;
+        const basePrice = Math.min(currentPrice / (1 + orderPriceDistance), highestPrice / (1 + basePriceDistance));
         const stopLossDistance = settings.stopLossDistance;
         const takeProfitDistance = settings.takeProfitDistance;
         const leverage = settings.leverage;
@@ -179,8 +202,7 @@ async function manageDailyOrders() {
 
         // Create buy orders
         for (let i = 0; i < totalOrders; i++) {
-            const priceDivider = 1 + basePriceDistance + (orderPriceDistance * i);
-            const limitPrice = (currentPrice / priceDivider);
+            const limitPrice = basePrice / (1 + orderPriceDistance * i);
             const stopLossPrice = (parseFloat(limitPrice) / (1 + stopLossDistance));
             const takeProfitPrice = (parseFloat(limitPrice) * (1 + takeProfitDistance));
             const volumePercentage = baseVolume + (volumeIncrease * i);
