@@ -1,6 +1,6 @@
 // Utility functions for Kraken batch orders
 
-const TRADING_PAIRS = {
+export const TRADING_PAIRS = {
     'BTC/USD': {
         symbol: 'BTC',
         name: 'Bitcoin',
@@ -63,22 +63,18 @@ const TRADING_PAIRS = {
 };
 
 // Get all supported assets
-const getSupportedAssets = () => {
+export function getSupportedAssets() {
     return Object.keys(TRADING_PAIRS);
-};
+}
 
 // Get pair info
-const getPairInfo = (asset) => {
+export function getPairInfo(asset) {
     return TRADING_PAIRS[asset];
-};
+}
 
-// Support both CommonJS and ES modules
-if (typeof exports !== 'undefined') {
-    exports.getSupportedAssets = getSupportedAssets;
-    exports.getPairInfo = getPairInfo;
-    exports.TRADING_PAIRS = TRADING_PAIRS;
-} else {
+// If we're in a browser environment, add to window object
+if (typeof window !== 'undefined') {
+    window.TRADING_PAIRS = TRADING_PAIRS;
     window.getSupportedAssets = getSupportedAssets;
     window.getPairInfo = getPairInfo;
-    window.TRADING_PAIRS = TRADING_PAIRS;
 }

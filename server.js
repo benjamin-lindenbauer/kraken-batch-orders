@@ -1,14 +1,14 @@
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const axios = require('axios');
-const crypto = require('crypto');
+import express, { json, Router } from 'express';
+import cors from 'cors';
+import { config as _config } from 'dotenv';
+import axios from 'axios';
+import { createHash, createHmac } from 'crypto';
 
-dotenv.config();
+_config();
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(json());
 
 // Add cache control headers for all responses
 app.use((req, res, next) => {
@@ -21,16 +21,13 @@ app.use((req, res, next) => {
 // Serve static files with no-cache options
 app.use(express.static('public', {
     etag: false,
-    lastModified: false,
-    setHeaders: (res) => {
-        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-        res.set('Pragma', 'no-cache');
-        res.set('Expires', '0');
+    setHeaders: (res, path, stat) => {
+        res.set('Cache-Control', 'no-cache');
     }
 }));
 
 // Import utils
-const { getPairInfo } = require('./public/utils.js');
+import { getPairInfo } from './public/utils.mjs';
 
 let lastNonce = Math.floor(Date.now() * 1000); // Microsecond precision
 
@@ -43,15 +40,15 @@ function generateNonce() {
 function getMessageSignature(path, postData, secret, nonce) {
     const message = postData;
     const secret_buffer = Buffer.from(secret, 'base64');
-    const hash = new crypto.createHash('sha256');
-    const hmac = new crypto.createHmac('sha512', secret_buffer);
+    const hash = new createHash('sha256');
+    const hmac = new createHmac('sha512', secret_buffer);
     const hash_digest = hash.update(nonce + message).digest('binary');
     const hmac_digest = hmac.update(path + hash_digest, 'binary').digest('base64');
     return hmac_digest;
 }
 
 // Export the router for Netlify Functions
-const router = express.Router();
+const router = Router();
 
 router.post('/api/batch-order', async (req, res) => {
     const { asset, price, direction, numOrders, distance, volume_distance, total, stop_loss, take_profit } = req.body;
@@ -127,7 +124,7 @@ router.post('/api/batch-order', async (req, res) => {
             data: requestData
         };
 
-        const response = await axios.request(config);
+        const response = await axios(config);
         
         res.json(response.data);
     } catch (error) {
@@ -326,4 +323,4 @@ if (process.env.NODE_ENV !== 'production') {
 }
 
 // Export the router for Netlify Functions
-module.exports = router;
+export default router;
