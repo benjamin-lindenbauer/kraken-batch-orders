@@ -197,7 +197,7 @@ async function manageDailyOrders() {
         const pair = settings.pair;
         const baseVolume = 0.0315; // Volume of the first order
         const volumeIncrease = 0.005; // Increase in volume for each additional order
-        const useStopLoss = true;
+        const useStopLoss = false;
         const orders = [];
 
         // Create buy orders
