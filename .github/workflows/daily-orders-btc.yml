@@ -1,10 +1,15 @@
-name: Daily Kraken Orders
+name: Daily Kraken Orders BTC
 
 on:
   schedule:
     # Run at 15:00 UTC every day
     - cron: '0 15 * * *'
   workflow_dispatch:  # Allows manual triggering
+    inputs:
+      base_price:
+        description: 'Base price for the order'
+        required: false
+        type: number
 
 jobs:
   place-orders:
@@ -16,13 +21,13 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '18'
+        node-version: '20'
         
     - name: Install dependencies
       run: npm install
       
     - name: Run order script
-      run: node scripts/daily_orders.js
+      run: node scripts/daily_orders.js BTC ${{ github.event.inputs.base_price }}
       env:
         KRAKEN_API_KEY: ${{ secrets.KRAKEN_API_KEY }}
         KRAKEN_API_SECRET: ${{ secrets.KRAKEN_API_SECRET }}

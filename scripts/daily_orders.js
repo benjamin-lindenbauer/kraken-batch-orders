@@ -124,15 +124,8 @@ async function getHighestPrice(coin, since) {
     return Math.max(...prices);
 }
 
-async function manageDailyOrders() {
+async function manageDailyOrders(coin, basePriceArg) {
     try {
-        // Get coin from command line argument, default to BTC
-        const coin = process.argv[2]?.toUpperCase() || 'BTC';
-        if (!ORDERS_SETTINGS[coin]) {
-            console.error(`Error: Invalid coin "${coin}". Supported coins are: ${Object.keys(ORDERS_SETTINGS).join(', ')}`);
-            process.exit(1);
-        }
-
         // Get trade balance
         const balanceInfo = await krakenRequest('/0/private/TradeBalance', { asset: 'ZUSD' });
         const tradeBalance = parseFloat(balanceInfo.tb);
@@ -190,7 +183,7 @@ async function manageDailyOrders() {
         const settings = ORDERS_SETTINGS[coin];
         const basePriceDistance = settings.basePriceDistance;
         const orderPriceDistance = settings.orderPriceDistance;
-        const basePrice = Math.min(currentPrice / (1 + orderPriceDistance), highestPrice / (1 + basePriceDistance));
+        const basePrice = basePriceArg || Math.min(currentPrice / (1 + orderPriceDistance), highestPrice / (1 + basePriceDistance));
         const stopLossDistance = settings.stopLossDistance;
         const takeProfitDistance = settings.takeProfitDistance;
         const leverage = settings.leverage;
@@ -235,5 +228,9 @@ async function manageDailyOrders() {
     }
 }
 
+// Get coin and base price from command line arguments
+const coin = process.argv[2]?.toUpperCase() || 'XRP';
+const basePriceArg = process.argv[3] ? parseFloat(process.argv[3]) : undefined;
+
 // Execute immediately
-manageDailyOrders();
+manageDailyOrders(coin, basePriceArg);
