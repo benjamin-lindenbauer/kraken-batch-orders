@@ -410,8 +410,8 @@ document.addEventListener('DOMContentLoaded', () => {
     updateBalances();
     balanceUpdateInterval = setInterval(updateBalances, 60000); // Update every minute
 
-    // Get trade balance
-    getTradeBalance();
+    // Add a small delay before getting the trade balance
+    setTimeout(getTradeBalance, 100); // 100ms delay
 
     // Start price updates
     startPriceUpdates(document.getElementById('asset').value);
