@@ -292,7 +292,17 @@ function populateAssetOptions() {
     });
 
     document.getElementById('direction').addEventListener('change', updateFirstOrderPrice);
-    document.getElementById('asset').addEventListener('change', updateFirstOrderPrice)
+    document.getElementById('asset').addEventListener('change', function() {
+        updateFirstOrderPrice();
+        const asset = this.value;
+        const pairInfo = getPairInfo(asset);
+        if (pairInfo) {
+            // Update leverage and total balance
+            const totalBalance = parseFloat(document.getElementById('totalBalance').textContent.replace('Total $', ''));
+            document.getElementById('leverageText').textContent = `Total $ (${pairInfo.leverage}x leverage)`;
+            document.getElementById('total').value = totalBalance * pairInfo.leverage;
+        }
+    });
     document.getElementById('priceOffset').addEventListener('input', updateFirstOrderPrice);
 
     // Stop Loss and Take Profit checkbox handlers
@@ -363,6 +373,9 @@ async function updateBalances() {
         balanceHtml = balanceHtml.slice(0, -2);
         balanceHtml += '</div>';
         balanceDisplay.innerHTML = balanceHtml;
+        
+        getTradeBalance();
+        balanceUpdateInterval = setInterval(getTradeBalance, 60000); // Update every minute
     } catch (error) {
         balanceDisplay.innerHTML = '<span class="text-danger">Error loading balances</span>';
     }
@@ -408,10 +421,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Start balance updates
     updateBalances();
-    balanceUpdateInterval = setInterval(updateBalances, 60000); // Update every minute
-
-    // Add a small delay before getting the trade balance
-    setTimeout(getTradeBalance, 100); // 100ms delay
 
     // Start price updates
     startPriceUpdates(document.getElementById('asset').value);

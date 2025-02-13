@@ -68,8 +68,10 @@ router.post('/api/batch-order', async (req, res) => {
             sumFactors += Math.pow(1 + volume_distance / 100, i);
         }
         
-        // Calculate the base price per order that will result in the desired total
-        const basePrice = total / sumFactors;
+        //total volume should be total rounded to 100
+        const totalVolume = Math.floor(total / 100) * 100;
+        // Calculate the base price per order that will result in the desired total volume
+        const basePrice = totalVolume / sumFactors;
         
         for (let i = 0; i < numOrders; i++) {
             const orderPrice = direction === 'buy' 
