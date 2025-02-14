@@ -77,6 +77,20 @@ function calculateOrders() {
         </tr>
     `;
 
+    // Calculate liquidation price
+    const totalBalance = parseFloat(document.getElementById('totalBalance').textContent.replace(/[^0-9.-]/g, ''));
+    const liquidationPrice = totalCoins > 0 
+      ? ((totalValue - totalBalance) / totalCoins).toFixed(priceDecimals)
+      : 'N/A';
+
+    tableHtml += `
+        <tr>
+            <td colspan="4" class="text-center">
+                Liquidation Price: $${liquidationPrice}
+            </td>
+        </tr>
+    `;
+
     tableHtml = `
         <table class="table table-striped">
             <thead>
@@ -92,7 +106,8 @@ function calculateOrders() {
     document.getElementById('previewTable').innerHTML = tableHtml;
 }
 
-async function updateStartPrice(pair) {
+async function updateStartPrice() {
+    const pair = document.getElementById('asset').value;
     try {
         const krakenPair = pair.replace('/', '');
         const response = await fetch(`/api/ticker/${krakenPair}`);
@@ -109,6 +124,7 @@ async function updateStartPrice(pair) {
 
         updateFirstOrderPrice();
     } catch (error) {
+        console.error('Error fetching price:', error);
         document.getElementById('currentPrice').textContent = 'Error fetching price';
     }
 }
@@ -250,7 +266,7 @@ async function cancelAllOrders() {
     }
 }
 
-function updateTotalEquity(asset) {
+function updateTotalBalance(asset) {
     const pairInfo = getPairInfo(asset);
     if (pairInfo) {
         // Update leverage and total balance
@@ -268,26 +284,6 @@ function populateAssetOptions() {
         const info = window.getPairInfo(asset);
         return `<option value="${asset}">${info.name} (${asset})</option>`;
     }).join('');
-
-    assetSelect.addEventListener('change', function() {
-        const asset = this.value;
-        updateTotalEquity(asset);
-        updateStartPrice(asset);
-    });
-
-    document.getElementById('direction').addEventListener('change', updateFirstOrderPrice);
-    document.getElementById('priceOffset').addEventListener('input', updateFirstOrderPrice);
-
-    // Stop Loss and Take Profit checkbox handlers
-    document.getElementById('enableStopLoss').addEventListener('change', function() {
-        document.getElementById('stop_loss').disabled = !this.checked;
-    });
-
-    document.getElementById('enableTakeProfit').addEventListener('change', function() {
-        document.getElementById('take_profit').disabled = !this.checked;
-    });
-
-    calculateOrders();
 }
 
 async function getTradeBalance() {
@@ -373,6 +369,49 @@ function updateFirstOrderPrice() {
     calculateOrders();
 }
 
+
+async function createOrders(event) {
+    event.preventDefault();
+    const stopLossEnabled = document.getElementById('enableStopLoss').checked;
+    const takeProfitEnabled = document.getElementById('enableTakeProfit').checked;
+    const formData = {
+        asset: document.getElementById('asset').value,
+        price: document.getElementById('start_price').value,
+        direction: document.getElementById('direction').value,
+        numOrders: document.getElementById('numOrders').value,
+        distance: document.getElementById('distance').value,
+        volume_distance: document.getElementById('volume_distance').value,
+        total: document.getElementById('total').value,
+        stop_loss: stopLossEnabled ? document.getElementById('stop_loss').value : null,
+        take_profit: takeProfitEnabled ? document.getElementById('take_profit').value : null
+    };
+
+    try {
+        const response = await fetch('/api/batch-order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(formData)
+        });
+
+        const result = await response.json();
+        if (result.error && result.error.length > 0) {
+            document.getElementById('result').innerHTML = `<div class="alert alert-danger">${result.error.join(', ')}</div>`;
+        } else {                
+            const orderDetails = document.getElementById('orderDetails');
+            const orderList = document.getElementById('orderList');
+            orderList.innerHTML = result.result.orders.map(order => 
+                order.error ? `<div class="text-danger">${order.error}</div>` :
+                `<div>${order.descr.order}</div>`
+            ).join('');
+            orderDetails.style.display = 'block';
+        }
+    } catch (error) {
+        document.getElementById('result').innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
+    }
+}
+
 // Initialize everything when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     // Form input event listeners
@@ -388,60 +427,37 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize button text
     document.getElementById('createButton').textContent = `Create ${document.getElementById('numOrders').value} Orders`;
 
-    // Initialize asset options
-    populateAssetOptions();
-
-    // Start balance updates
-    updateBalances();
-
-    // Start price updates
-    updateStartPrice(document.getElementById('asset').value);
-
     // Handle tab changes
     document.getElementById('open-tab').addEventListener('click', fetchOpenOrders);
     document.getElementById('refreshOrders').addEventListener('click', fetchOpenOrders);
     document.getElementById('cancelAll').addEventListener('click', cancelAllOrders);
 
     // Button event listeners
-    document.getElementById('createButton').addEventListener('click', async (event) => {
-        event.preventDefault();
-        const stopLossEnabled = document.getElementById('enableStopLoss').checked;
-        const takeProfitEnabled = document.getElementById('enableTakeProfit').checked;
-        const formData = {
-            asset: document.getElementById('asset').value,
-            price: document.getElementById('start_price').value,
-            direction: document.getElementById('direction').value,
-            numOrders: document.getElementById('numOrders').value,
-            distance: document.getElementById('distance').value,
-            volume_distance: document.getElementById('volume_distance').value,
-            total: document.getElementById('total').value,
-            stop_loss: stopLossEnabled ? document.getElementById('stop_loss').value : null,
-            take_profit: takeProfitEnabled ? document.getElementById('take_profit').value : null
-        };
+    document.getElementById('createButton').addEventListener('click', createOrders);
 
-        try {
-            const response = await fetch('/api/batch-order', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(formData)
-            });
+    document.getElementById('asset').addEventListener('change', function() {
+        updateTotalBalance(this.value);
+        updateStartPrice();
+    });
 
-            const result = await response.json();
-            if (result.error && result.error.length > 0) {
-                document.getElementById('result').innerHTML = `<div class="alert alert-danger">${result.error.join(', ')}</div>`;
-            } else {                
-                const orderDetails = document.getElementById('orderDetails');
-                const orderList = document.getElementById('orderList');
-                orderList.innerHTML = result.result.orders.map(order => 
-                    order.error ? `<div class="text-danger">${order.error}</div>` :
-                    `<div>${order.descr.order}</div>`
-                ).join('');
-                orderDetails.style.display = 'block';
-            }
-        } catch (error) {
-            document.getElementById('result').innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
-        }
+    document.getElementById('direction').addEventListener('change', updateFirstOrderPrice);
+    document.getElementById('priceOffset').addEventListener('input', updateFirstOrderPrice);
+
+    // Stop Loss and Take Profit checkbox handlers
+    document.getElementById('enableStopLoss').addEventListener('change', function() {
+        document.getElementById('stop_loss').disabled = !this.checked;
+    });
+
+    document.getElementById('enableTakeProfit').addEventListener('change', function() {
+        document.getElementById('take_profit').disabled = !this.checked;
+    });
+
+    // Initialize asset options
+    populateAssetOptions();
+
+    // Start balance updates
+    updateBalances().then(() => {
+        // Start price updates
+        updateStartPrice();
     });
 });
