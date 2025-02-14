@@ -3,6 +3,8 @@ function calculateOrders() {
     const price = parseFloat(document.getElementById('start_price').value);
     const numOrders = parseInt(document.getElementById('numOrders').value);
     const distance = parseFloat(document.getElementById('distance').value);
+    const stopLoss = parseFloat(document.getElementById('stop_loss').value);
+    const takeProfit = parseFloat(document.getElementById('take_profit').value);
     const volumeDistance = parseFloat(document.getElementById('volume_distance').value);
     const currentPrice = parseFloat(document.getElementById('currentPrice').textContent.replace('$', ''));
     const totalBalance = parseFloat(document.getElementById('totalBalance').textContent.replace(/[^0-9.-]/g, ''));
@@ -35,12 +37,16 @@ function calculateOrders() {
         const volume = pricePerOrder / orderPrice;
         const totalUsd = orderPrice * volume;
         const distanceToCurrent = (orderPrice - currentPrice) / currentPrice * 100;
+        const stopLossPrice = direction === 'buy' ? orderPrice / (1 + stopLoss / 100) : orderPrice * (1 + stopLoss / 100);
+        const takeProfitPrice = direction === 'buy' ? orderPrice * (1 + takeProfit / 100) : orderPrice / (1 + takeProfit / 100);
         
         orders.push({
             orderPrice: orderPrice,
             volume: volume,
             total: totalUsd,
-            distanceToCurrent: distanceToCurrent
+            distanceToCurrent: distanceToCurrent,
+            stopLossPrice: stopLossPrice,
+            takeProfitPrice: takeProfitPrice
         });
     }
 
@@ -68,7 +74,8 @@ function calculateOrders() {
                 <td>${order.volume.toFixed(6)} ${pairInfo.symbol}</td>
                 <td>$${order.total.toFixed(2)}</td>
                 <td>${order.distanceToCurrent.toFixed(2)}%</td>
-                <td></td>
+                <td>$${order.stopLossPrice.toFixed(priceDecimals)}</td>
+                <td>$${order.takeProfitPrice.toFixed(priceDecimals)}</td>
             </tr>
         `;
     });
@@ -88,7 +95,7 @@ function calculateOrders() {
             <td><strong>${totalCoins.toFixed(6)} Total volume</strong></td>
             <td><strong>$${totalValue.toFixed(2)} Total $</strong></td>
             <td><strong>${totalRange.toFixed(2)}% Total range</strong></td>
-            <td><strong>Liquidation: $${liquidationPrice}</strong></td>
+            <td colspan="2"><strong>Liquidation: $${liquidationPrice}</strong></td>
         </tr>
     `;
 
@@ -101,7 +108,8 @@ function calculateOrders() {
                     <th>Order Volume</th>
                     <th>Order Volume $</th>
                     <th>Distance to Current Price</th>
-                    <th></th>
+                    <th>Stop Loss</th>
+                    <th>Take Profit</th>
                 </tr>
             </thead>
             <tbody>
