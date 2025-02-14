@@ -1,3 +1,5 @@
+let orders = [];
+
 // Functions
 function calculateOrders() {
     const price = parseFloat(document.getElementById('start_price').value);
@@ -16,8 +18,6 @@ function calculateOrders() {
         document.getElementById('previewTable').innerHTML = '<p>Please fill in all fields</p>';
         return;
     }
-
-    const orders = [];
     
     // Calculate the sum of the geometric progression factors for volume
     let sumFactors = 0;
@@ -28,6 +28,8 @@ function calculateOrders() {
     // Calculate the base price that will result in the desired total
     const basePrice = total / sumFactors;
 
+    orders = [];
+
     for (let i = 0; i < numOrders; i++) {
         const orderPrice = direction === 'buy'
             ? price / Math.pow(1 + distance / 100, i)
@@ -37,8 +39,8 @@ function calculateOrders() {
         const volume = pricePerOrder / orderPrice;
         const totalUsd = orderPrice * volume;
         const distanceToCurrent = (orderPrice - currentPrice) / currentPrice * 100;
-        const stopLossPrice = direction === 'buy' ? orderPrice / (1 + stopLoss / 100) : orderPrice * (1 + stopLoss / 100);
-        const takeProfitPrice = direction === 'buy' ? orderPrice * (1 + takeProfit / 100) : orderPrice / (1 + takeProfit / 100);
+        const stopLossPrice = direction === 'buy' ? orderPrice * (1 - stopLoss / 100) : orderPrice * (1 + stopLoss / 100);
+        const takeProfitPrice = direction === 'buy' ? orderPrice * (1 + takeProfit / 100) : orderPrice * (1 - takeProfit / 100);
         
         orders.push({
             orderPrice: orderPrice,
@@ -380,7 +382,6 @@ function updateFirstOrderPrice() {
     calculateOrders();
 }
 
-
 async function createOrders(event) {
     event.preventDefault();
     const stopLossEnabled = document.getElementById('enableStopLoss').checked;
@@ -423,6 +424,84 @@ async function createOrders(event) {
     }
 }
 
+// Price preview functionality
+function calculateAndDisplayLosses(previewPrice, direction) {
+    let realizedLoss = 0;
+    let unrealizedLoss = 0;
+    let positionSize = 0;
+    let closedPositionSize = 0;
+  
+    orders.forEach(order => {
+      const entryPrice = order.orderPrice;
+      const stopLossPrice = order.stopLossPrice;
+      const quantity = order.volume;
+      
+      if (direction === 'buy') {
+        if (previewPrice >= entryPrice) {
+          // Price above entry - no losses
+          return;
+        }
+        
+        if (previewPrice > stopLossPrice) {
+          // Unrealized loss between entry and stop loss
+          unrealizedLoss += (entryPrice - previewPrice) * quantity;
+          positionSize += quantity;
+        } else {
+          // Realized loss at stop loss
+          realizedLoss += (entryPrice - stopLossPrice) * quantity;
+          closedPositionSize += quantity;
+        }
+      } else { // sell direction
+        if (previewPrice <= entryPrice) {
+          // Price below entry - no losses
+          return;
+        }
+        
+        if (previewPrice < stopLossPrice) {
+          // Unrealized loss between entry and stop loss
+          unrealizedLoss += (previewPrice - entryPrice) * quantity;
+          positionSize += quantity;
+        } else {
+          // Realized loss at stop loss
+          realizedLoss += (stopLossPrice - entryPrice) * quantity;
+          closedPositionSize += quantity;
+        }
+      }
+    });
+  
+    return { realizedLoss, unrealizedLoss, positionSize, closedPositionSize };
+};
+
+const formatCurrency = (value) => {
+  if (isNaN(value)) return '-';
+  return `$${Math.abs(value).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}${value < 0 ? ' (gain)' : ''}`;
+};
+
+function updateLosses() {
+  try {
+    const direction = document.getElementById('direction').value;
+    const currentPrice = parseFloat(document.getElementById('currentPrice').textContent.replace('$', ''));
+    
+    if (!currentPrice || !direction) return;
+    if (isNaN(currentPrice)) throw new Error('Invalid current price');
+
+    const sliderValue = parseFloat(document.getElementById('priceSlider').value);
+    const previewPrice = direction === 'buy'
+      ? currentPrice * (1 - sliderValue/100)
+      : currentPrice * (1 + sliderValue/100);
+
+    const { realizedLoss, unrealizedLoss, positionSize, closedPositionSize } = calculateAndDisplayLosses(previewPrice, direction);
+
+    document.getElementById('previewPrice').textContent = previewPrice.toFixed(6);
+    document.getElementById('realizedLoss').innerHTML = formatCurrency(realizedLoss);
+    document.getElementById('unrealizedLoss').innerHTML = formatCurrency(unrealizedLoss);
+    document.getElementById('positionSize').innerHTML = positionSize.toFixed(6);
+    document.getElementById('closedPositionSize').innerHTML = closedPositionSize.toFixed(6);
+  } catch (error) {
+    console.error('Error updating losses:', error);
+  }
+};
+
 // Initialize everything when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     // Form input event listeners
@@ -462,6 +541,8 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('enableTakeProfit').addEventListener('change', function() {
         document.getElementById('take_profit').disabled = !this.checked;
     });
+
+    document.getElementById('priceSlider').addEventListener('input', updateLosses);
 
     // Initialize asset options
     populateAssetOptions();
