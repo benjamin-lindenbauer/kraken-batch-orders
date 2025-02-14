@@ -3,12 +3,14 @@ function calculateOrders() {
     const price = parseFloat(document.getElementById('start_price').value);
     const numOrders = parseInt(document.getElementById('numOrders').value);
     const distance = parseFloat(document.getElementById('distance').value);
-    const volume_distance = parseFloat(document.getElementById('volume_distance').value);
+    const volumeDistance = parseFloat(document.getElementById('volume_distance').value);
+    const currentPrice = parseFloat(document.getElementById('currentPrice').textContent.replace('$', ''));
+    const totalBalance = parseFloat(document.getElementById('totalBalance').textContent.replace(/[^0-9.-]/g, ''));
     const direction = document.getElementById('direction').value;
     const total = parseFloat(document.getElementById('total').value);
     const asset = document.getElementById('asset').value;
 
-    if (!price || !numOrders || !distance || !volume_distance || !total) {
+    if (!price || !numOrders || !distance || !volumeDistance || !total) {
         document.getElementById('previewTable').innerHTML = '<p>Please fill in all fields</p>';
         return;
     }
@@ -18,7 +20,7 @@ function calculateOrders() {
     // Calculate the sum of the geometric progression factors for volume
     let sumFactors = 0;
     for (let i = 0; i < numOrders; i++) {
-        sumFactors += Math.pow(1 + volume_distance / 100, i);
+        sumFactors += Math.pow(1 + volumeDistance / 100, i);
     }
     
     // Calculate the base price that will result in the desired total
@@ -29,14 +31,16 @@ function calculateOrders() {
             ? price / Math.pow(1 + distance / 100, i)
             : price * Math.pow(1 + distance / 100, i);
         // Calculate this order's portion using geometric progression with volume_distance
-        const pricePerOrder = basePrice * Math.pow(1 + volume_distance / 100, i);
+        const pricePerOrder = basePrice * Math.pow(1 + volumeDistance / 100, i);
         const volume = pricePerOrder / orderPrice;
         const totalUsd = orderPrice * volume;
+        const distanceToCurrent = (orderPrice - currentPrice) / currentPrice * 100;
         
         orders.push({
             orderPrice: orderPrice,
             volume: volume,
-            total: totalUsd
+            total: totalUsd,
+            distanceToCurrent: distanceToCurrent
         });
     }
 
@@ -63,9 +67,18 @@ function calculateOrders() {
                 <td>$${order.orderPrice.toFixed(priceDecimals)}</td>
                 <td>${order.volume.toFixed(6)} ${pairInfo.symbol}</td>
                 <td>$${order.total.toFixed(2)}</td>
+                <td>${order.distanceToCurrent.toFixed(2)}%</td>
+                <td></td>
             </tr>
         `;
     });
+
+    // Calculate liquidation price
+    const liquidationPrice = totalCoins > 0 
+        ? ((direction === 'buy' 
+            ? (totalValue - totalBalance) 
+            : (totalValue + totalBalance)) / totalCoins).toFixed(priceDecimals)
+        : 'N/A';
 
     // Add summary row
     tableHtml += `
@@ -74,25 +87,8 @@ function calculateOrders() {
             <td><strong>$${(totalValue / totalCoins).toFixed(priceDecimals)} Average price</strong></td>
             <td><strong>${totalCoins.toFixed(6)} Total volume</strong></td>
             <td><strong>$${totalValue.toFixed(2)} Total $</strong></td>
-        </tr>
-    `;
-
-    // Calculate liquidation price
-    const totalBalance = parseFloat(document.getElementById('totalBalance').textContent.replace(/[^0-9.-]/g, ''));
-    const liquidationPrice = totalCoins > 0 
-      ? ((direction === 'buy' 
-          ? (totalValue - totalBalance) 
-          : (totalValue + totalBalance)) / totalCoins).toFixed(priceDecimals)
-      : 'N/A';
-
-    tableHtml += `
-        <tr>
-            <td colspan="2" class="text-center">
-                <strong>${totalRange.toFixed(2)}% Total range</strong>
-            </td>
-            <td colspan="2" class="text-center">
-                <strong>Liquidation Price: $${liquidationPrice}</strong>
-            </td>
+            <td><strong>${totalRange.toFixed(2)}% Total range</strong></td>
+            <td><strong>Liquidation: $${liquidationPrice}</strong></td>
         </tr>
     `;
 
@@ -104,6 +100,8 @@ function calculateOrders() {
                     <th>Price</th>
                     <th>Order Volume</th>
                     <th>Order Volume $</th>
+                    <th>Distance to Current Price</th>
+                    <th></th>
                 </tr>
             </thead>
             <tbody>
@@ -463,6 +461,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Start balance updates
     updateBalances().then(() => {
         // Start price updates
-        updateStartPrice();
+        setTimeout(updateStartPrice, 100);
     });
 });
