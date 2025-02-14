@@ -70,7 +70,7 @@ function calculateOrders() {
     // Add summary row
     tableHtml += `
         <tr>
-            <td><strong>${totalRange.toFixed(2)}% Total range</strong></td>
+            <td><strong></strong></td>
             <td><strong>$${(totalValue / totalCoins).toFixed(priceDecimals)} Average price</strong></td>
             <td><strong>${totalCoins.toFixed(6)} Total volume</strong></td>
             <td><strong>$${totalValue.toFixed(2)} Total $</strong></td>
@@ -80,13 +80,18 @@ function calculateOrders() {
     // Calculate liquidation price
     const totalBalance = parseFloat(document.getElementById('totalBalance').textContent.replace(/[^0-9.-]/g, ''));
     const liquidationPrice = totalCoins > 0 
-      ? ((totalValue - totalBalance) / totalCoins).toFixed(priceDecimals)
+      ? ((direction === 'buy' 
+          ? (totalValue - totalBalance) 
+          : (totalValue + totalBalance)) / totalCoins).toFixed(priceDecimals)
       : 'N/A';
 
     tableHtml += `
         <tr>
-            <td colspan="4" class="text-center">
-                Liquidation Price: $${liquidationPrice}
+            <td colspan="2" class="text-center">
+                <strong>${totalRange.toFixed(2)}% Total range</strong>
+            </td>
+            <td colspan="2" class="text-center">
+                <strong>Liquidation Price: $${liquidationPrice}</strong>
             </td>
         </tr>
     `;
