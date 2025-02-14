@@ -7,16 +7,11 @@ export const TRADING_PAIRS = {
         leverage: '5',
         priceDecimals: 1
     },
-    'BTC/CHF': {
-        symbol: 'BTC',
-        name: 'Bitcoin (Spot)',
-        priceDecimals: 1
-    },
     'ETH/USD': {
         symbol: 'ETH',
         name: 'Ethereum',
         leverage: '5',
-        priceDecimals: 1
+        priceDecimals: 2
     },
     'XRP/USD': {
         symbol: 'XRP',
@@ -40,7 +35,7 @@ export const TRADING_PAIRS = {
         symbol: 'LINK',
         name: 'Chainlink',
         leverage: '3',
-        priceDecimals: 5
+        priceDecimals: 4
     },
     'PEPE/USD': {
         symbol: 'PEPE',
@@ -59,6 +54,12 @@ export const TRADING_PAIRS = {
         name: 'Stellar',
         leverage: '2',
         priceDecimals: 6
+    },
+    'SUI/USD': {
+        symbol: 'SUI',
+        name: 'Sui',
+        leverage: '3',
+        priceDecimals: 4
     }
 };
 

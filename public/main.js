@@ -1,10 +1,6 @@
-// Global variables
-let priceUpdateInterval;
-let balanceUpdateInterval;
-
 // Functions
 function calculateOrders() {
-    const price = parseFloat(document.getElementById('price').value);
+    const price = parseFloat(document.getElementById('start_price').value);
     const numOrders = parseInt(document.getElementById('numOrders').value);
     const distance = parseFloat(document.getElementById('distance').value);
     const volume_distance = parseFloat(document.getElementById('volume_distance').value);
@@ -96,7 +92,7 @@ function calculateOrders() {
     document.getElementById('previewTable').innerHTML = tableHtml;
 }
 
-async function updatePrice(pair) {
+async function updateStartPrice(pair) {
     try {
         const krakenPair = pair.replace('/', '');
         const response = await fetch(`/api/ticker/${krakenPair}`);
@@ -111,30 +107,10 @@ async function updatePrice(pair) {
         const lastPrice = parseFloat(result.c[0]);
         document.getElementById('currentPrice').textContent = `$${lastPrice}`;
 
-        // Get the direction and set price accordingly
-        const direction = document.getElementById('direction').value;
-        const priceInput = document.getElementById('price');
-        const pairInfo = window.getPairInfo(pair);
-        const priceDecimals = pairInfo.priceDecimals;
-        if (direction === 'buy') {
-            const offset = 1 - (document.getElementById('priceOffset').value / 100);
-            priceInput.value = (lastPrice * offset).toFixed(priceDecimals); // Below current price
-        } else {
-            const offset = 1 + (document.getElementById('priceOffset').value / 100);
-            priceInput.value = (lastPrice * offset).toFixed(priceDecimals); // Above current price
-        }
-        calculateOrders(); // Recalculate orders with new price
+        updateFirstOrderPrice();
     } catch (error) {
         document.getElementById('currentPrice').textContent = 'Error fetching price';
     }
-}
-
-function startPriceUpdates(pair) {
-    if (priceUpdateInterval) {
-        clearInterval(priceUpdateInterval);
-    }
-    updatePrice(pair);
-    priceUpdateInterval = setInterval(() => updatePrice(pair), 600000); // 10 minutes
 }
 
 async function fetchOpenOrders() {
@@ -274,6 +250,16 @@ async function cancelAllOrders() {
     }
 }
 
+function updateTotalEquity(asset) {
+    const pairInfo = getPairInfo(asset);
+    if (pairInfo) {
+        // Update leverage and total balance
+        const totalBalance = parseFloat(document.getElementById('totalBalance').textContent.replace('Total $', ''));
+        document.getElementById('leverageText').textContent = `Total $ (${pairInfo.leverage}x leverage)`;
+        document.getElementById('total').value = totalBalance * pairInfo.leverage;
+    }
+}
+
 function populateAssetOptions() {
     const assetSelect = document.getElementById('asset');
     const assets = window.getSupportedAssets();
@@ -284,25 +270,12 @@ function populateAssetOptions() {
     }).join('');
 
     assetSelect.addEventListener('change', function() {
-        calculateOrders();
-        if (priceUpdateInterval) {
-            clearInterval(priceUpdateInterval);
-        }
-        startPriceUpdates(this.value);
+        const asset = this.value;
+        updateTotalEquity(asset);
+        updateStartPrice(asset);
     });
 
     document.getElementById('direction').addEventListener('change', updateFirstOrderPrice);
-    document.getElementById('asset').addEventListener('change', function() {
-        updateFirstOrderPrice();
-        const asset = this.value;
-        const pairInfo = getPairInfo(asset);
-        if (pairInfo) {
-            // Update leverage and total balance
-            const totalBalance = parseFloat(document.getElementById('totalBalance').textContent.replace('Total $', ''));
-            document.getElementById('leverageText').textContent = `Total $ (${pairInfo.leverage}x leverage)`;
-            document.getElementById('total').value = totalBalance * pairInfo.leverage;
-        }
-    });
     document.getElementById('priceOffset').addEventListener('input', updateFirstOrderPrice);
 
     // Stop Loss and Take Profit checkbox handlers
@@ -375,7 +348,6 @@ async function updateBalances() {
         balanceDisplay.innerHTML = balanceHtml;
         
         getTradeBalance();
-        balanceUpdateInterval = setInterval(getTradeBalance, 60000); // Update every minute
     } catch (error) {
         balanceDisplay.innerHTML = '<span class="text-danger">Error loading balances</span>';
     }
@@ -383,7 +355,7 @@ async function updateBalances() {
 
 function updateFirstOrderPrice() {
     const direction = document.getElementById('direction').value;
-    const priceInput = document.getElementById('price');
+    const priceInput = document.getElementById('start_price');
     const currentPrice = parseFloat(document.getElementById('currentPrice').textContent.replace('$', ''));
     const pair = document.getElementById('asset').value;
     const pairInfo = window.getPairInfo(pair);
@@ -423,7 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateBalances();
 
     // Start price updates
-    startPriceUpdates(document.getElementById('asset').value);
+    updateStartPrice(document.getElementById('asset').value);
 
     // Handle tab changes
     document.getElementById('open-tab').addEventListener('click', fetchOpenOrders);
@@ -437,7 +409,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const takeProfitEnabled = document.getElementById('enableTakeProfit').checked;
         const formData = {
             asset: document.getElementById('asset').value,
-            price: document.getElementById('price').value,
+            price: document.getElementById('start_price').value,
             direction: document.getElementById('direction').value,
             numOrders: document.getElementById('numOrders').value,
             distance: document.getElementById('distance').value,
