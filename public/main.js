@@ -426,6 +426,8 @@ async function createOrders(event) {
 
 // Price preview functionality
 function calculateAndDisplayLosses(previewPrice, direction) {
+    const totalBalance = parseFloat(document.getElementById('totalBalance').textContent.replace(/[^0-9.-]/g, ''));
+    const stopLossEnabled = document.getElementById('enableStopLoss').checked;
     let realizedLoss = 0;
     let unrealizedLoss = 0;
     let positionSize = 0;
@@ -442,7 +444,7 @@ function calculateAndDisplayLosses(previewPrice, direction) {
           return;
         }
         
-        if (previewPrice > stopLossPrice) {
+        if (!stopLossEnabled || previewPrice > stopLossPrice) {
           // Unrealized loss between entry and stop loss
           unrealizedLoss += (entryPrice - previewPrice) * quantity;
           positionSize += quantity;
@@ -457,7 +459,7 @@ function calculateAndDisplayLosses(previewPrice, direction) {
           return;
         }
         
-        if (previewPrice < stopLossPrice) {
+        if (!stopLossEnabled || previewPrice < stopLossPrice) {
           // Unrealized loss between entry and stop loss
           unrealizedLoss += (previewPrice - entryPrice) * quantity;
           positionSize += quantity;
@@ -468,6 +470,13 @@ function calculateAndDisplayLosses(previewPrice, direction) {
         }
       }
     });
+
+    if (unrealizedLoss > totalBalance) {
+      realizedLoss = totalBalance;
+      unrealizedLoss = 0;
+      closedPositionSize = positionSize;
+      positionSize = 0;
+    }
   
     return { realizedLoss, unrealizedLoss, positionSize, closedPositionSize };
 };
