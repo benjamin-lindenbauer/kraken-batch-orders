@@ -279,13 +279,12 @@ async function cancelAllOrders() {
     }
 }
 
-function updateTotalBalance(asset) {
+function updateTotalVolume(asset, newLeverage) {
     const pairInfo = getPairInfo(asset);
     if (pairInfo) {
-        // Update leverage and total balance
         const totalBalance = parseFloat(document.getElementById('totalBalance').textContent.replace('Total $', ''));
-        document.getElementById('leverageText').textContent = `Total $ (${pairInfo.leverage}x leverage)`;
-        document.getElementById('total').value = totalBalance * pairInfo.leverage;
+        const leverage = parseInt(newLeverage || document.getElementById('leverage').value);
+        document.getElementById('total').value = totalBalance * (leverage || 1);
     }
 }
 
@@ -320,7 +319,8 @@ async function getTradeBalance() {
 
         // Get the trade balance and update the total input field
         document.getElementById('totalBalance').textContent = `Total $${parseInt(data.result.eb)}`;
-        document.getElementById('total').value = parseInt(data.result.tb) * 5;
+        const leverage = parseInt(document.getElementById('leverage').value);
+        document.getElementById('total').value = parseInt(data.result.tb) * (leverage || 1);
     } catch (error) {
         console.error('Error fetching trade balance:', error);
     }
@@ -541,7 +541,11 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('createButton').addEventListener('click', createOrders);
 
     document.getElementById('asset').addEventListener('change', function() {
-        updateTotalBalance(this.value);
+        const pairInfo = getPairInfo(this.value);
+        const maxLeverage = pairInfo ? parseInt(pairInfo.leverage) : 5;
+        const currentLeverage = parseInt(document.getElementById('leverage').value);
+        if (maxLeverage < currentLeverage) document.getElementById('leverage').value = maxLeverage;
+        updateTotalVolume(this.value, Math.min(maxLeverage, currentLeverage));
         updateStartPrice();
     });
 
@@ -558,6 +562,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     document.getElementById('priceSlider').addEventListener('input', updateLosses);
+
+    document.getElementById('leverage').addEventListener('change', function() {
+        const asset = document.getElementById('asset').value;
+        const pairInfo = getPairInfo(asset);
+        const maxLeverage = pairInfo ? parseInt(pairInfo.leverage) : 5;
+        const newLeverage = Math.min(maxLeverage, parseInt(this.value));
+        document.getElementById('leverage').value = newLeverage;
+        updateTotalVolume(asset, newLeverage);
+        updateStartPrice();
+    });
 
     // Initialize asset options
     populateAssetOptions();

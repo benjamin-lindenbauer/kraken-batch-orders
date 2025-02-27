@@ -86,8 +86,15 @@
                                 </div>
                                 <div class="col-4">
                                     <div class="input-group">
-                                        <span class="input-group-text">Price Offset %</span>
-                                        <input type="number" class="form-control" id="priceOffset" value="2.5" min="0.0" max="20.0" step="0.1" required>
+                                        <span class="input-group-text">Spot/Margin</span>
+                                        <select class="form-select" id="leverage" required>
+                                            <option value="spot">Spot</option>
+                                            <option value="1">1x Leverage</option>
+                                            <option value="2">2x Leverage</option>
+                                            <option value="3">3x Leverage</option>
+                                            <option value="4">4x Leverage</option>
+                                            <option selected value="5">5x Leverage</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>
@@ -98,7 +105,7 @@
                                     <div class="input-group">
                                         <span class="input-group-text">Direction</span>
                                         <select class="form-select" id="direction" required>
-                                            <option value="buy">Buy</option>
+                                            <option selected value="buy">Buy</option>
                                             <option value="sell">Sell</option>
                                         </select>
                                     </div>
@@ -111,8 +118,8 @@
                                 </div>
                                 <div class="col-4">
                                     <div class="input-group">
-                                        <span class="input-group-text" id="leverageText">Total $ (5x leverage)</span>
-                                        <input type="number" class="form-control" id="total" step="100" value="50000" min="100" required>
+                                        <span class="input-group-text">Price Offset %</span>
+                                        <input type="number" class="form-control" id="priceOffset" value="2.5" min="0.0" max="20.0" step="0.1" required>
                                     </div>
                                 </div>
                             </div>
@@ -141,6 +148,12 @@
 
                             <!-- Row 4: Stop Loss, Take Profit -->
                             <div class="row align-items-center">
+                                <div class="col-4">
+                                    <div class="input-group">
+                                        <span class="input-group-text" id="leverageText">Total Order Volume $</span>
+                                        <input type="number" class="form-control" id="total" step="100" value="50000" min="100" required>
+                                    </div>
+                                </div>
                                 <div class="col-4">
                                     <div class="input-group">
                                         <div class="input-group-text">
