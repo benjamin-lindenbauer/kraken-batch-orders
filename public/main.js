@@ -384,22 +384,28 @@ function updateFirstOrderPrice() {
 
 async function createOrders(event) {
     event.preventDefault();
+    const numOrders = parseInt(document.getElementById('numOrders').value);
+    if (numOrders <= 0) {
+        document.getElementById('result').innerHTML = `<div class="alert alert-danger">Please enter a valid number of orders.</div>`;
+        return;
+    }
     const stopLossEnabled = document.getElementById('enableStopLoss').checked;
     const takeProfitEnabled = document.getElementById('enableTakeProfit').checked;
+
     const formData = {
         asset: document.getElementById('asset').value,
-        price: document.getElementById('start_price').value,
+        price: parseFloat(document.getElementById('start_price').value),
         direction: document.getElementById('direction').value,
-        numOrders: document.getElementById('numOrders').value,
-        distance: document.getElementById('distance').value,
-        volume_distance: document.getElementById('volume_distance').value,
-        total: document.getElementById('total').value,
-        stop_loss: stopLossEnabled ? document.getElementById('stop_loss').value : null,
-        take_profit: takeProfitEnabled ? document.getElementById('take_profit').value : null
+        numOrders,
+        distance: parseFloat(document.getElementById('distance').value),
+        volume_distance: parseFloat(document.getElementById('volume_distance').value),
+        total: parseFloat(document.getElementById('total').value),
+        stop_loss: stopLossEnabled ? parseFloat(document.getElementById('stop_loss').value) : null,
+        take_profit: takeProfitEnabled ? parseFloat(document.getElementById('take_profit').value) : null
     };
 
     try {
-        const response = await fetch('/api/batch-order', {
+        const req = await fetch(numOrders === 1 ? '/api/add-order' : '/api/batch-orders', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -407,16 +413,16 @@ async function createOrders(event) {
             body: JSON.stringify(formData)
         });
 
-        const result = await response.json();
-        if (result.error && result.error.length > 0) {
-            document.getElementById('result').innerHTML = `<div class="alert alert-danger">${result.error.join(', ')}</div>`;
+        const response = await req.json();
+        if (response.error && response.error.length > 0) {
+            document.getElementById('result').innerHTML = `<div class="alert alert-danger">${response.error.join(', ')}</div>`;
         } else {                
             const orderDetails = document.getElementById('orderDetails');
             const orderList = document.getElementById('orderList');
-            orderList.innerHTML = result.result.orders.map(order => 
+            orderList.innerHTML = response.result.orders ? response.result.orders.map(order => 
                 order.error ? `<div class="text-danger">${order.error}</div>` :
                 `<div>${order.descr.order}</div>`
-            ).join('');
+            ).join('') : `<div>${response.result.descr?.order}</div>`;
             orderDetails.style.display = 'block';
         }
     } catch (error) {

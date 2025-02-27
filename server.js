@@ -50,8 +50,8 @@ function getMessageSignature(path, postData, secret, nonce) {
 // Export the router for Netlify Functions
 const router = Router();
 
-router.post('/api/batch-order', async (req, res) => {
-    const { asset, price, direction, numOrders, distance, volume_distance, total, stop_loss, take_profit } = req.body;
+router.post('/api/batch-orders', async (req, res) => {
+    const { asset, price: startPrice, direction, numOrders, distance, volume_distance, total, stop_loss, take_profit } = req.body;
     
     try {
         const pairInfo = getPairInfo(asset);
@@ -75,17 +75,16 @@ router.post('/api/batch-order', async (req, res) => {
         
         for (let i = 0; i < numOrders; i++) {
             const orderPrice = direction === 'buy' 
-                ? price / Math.pow(1 + distance / 100, i)
-                : price * Math.pow(1 + distance / 100, i);
+                ? startPrice / Math.pow(1 + distance / 100, i)
+                : startPrice * Math.pow(1 + distance / 100, i);
             // Calculate this order's portion of the total using the geometric progression with volume_distance
             const pricePerOrder = basePrice * Math.pow(1 + volume_distance / 100, i);
             const volume = pricePerOrder / orderPrice;
             const order = {
                 ordertype: "limit",
                 price: orderPrice.toFixed(priceDecimals),
-                timeinforce: "GTC",
                 type: direction,
-                //cl_ord_id: `${Date.now()}-${i}`,
+                cl_ord_id: `${Date.now()}-${i}`,
                 volume: volume.toFixed(8),
                 pair: asset,
                 leverage: pairInfo.leverage
@@ -109,6 +108,56 @@ router.post('/api/batch-order', async (req, res) => {
             orders: orders,
             pair: asset,
             validate: false,
+            deadline: new Date(Date.now() + 30000).toISOString() // 30 seconds from now
+        };
+
+        const signature = getMessageSignature(path, JSON.stringify(requestData), process.env.KRAKEN_API_SECRET, nonce);
+
+        const config = {
+            method: 'post',
+            maxBodyLength: Infinity,
+            url: 'https://api.kraken.com' + path,
+            headers: { 
+                'Content-Type': 'application/json',
+                'API-Key': process.env.KRAKEN_API_KEY,
+                'API-Sign': signature
+            },
+            data: requestData
+        };
+
+        const response = await axios(config);
+        
+        res.json(response.data);
+    } catch (error) {
+        res.status(500).json({ error: error.response?.data || error.message });
+    }
+});
+
+router.post('/api/add-order', async (req, res) => {
+    const { asset, price, direction, total, stop_loss, take_profit } = req.body;
+    
+    try {
+        const pairInfo = getPairInfo(asset);
+        if (!pairInfo) {
+            return res.status(400).json({ error: ['Invalid trading pair'] });
+        }
+
+        const priceDecimals = pairInfo.priceDecimals;
+
+        const nonce = generateNonce();
+        const path = '/0/private/AddOrder';
+
+        const requestData = {
+            nonce: nonce,
+            ordertype: "limit",
+            price: price.toFixed(priceDecimals),
+            type: direction,
+            clOrdId: `${Date.now()}`,
+            volume: (total / price).toFixed(8),
+            pair: asset,
+            leverage: pairInfo.leverage,
+            ...stop_loss && { close: { ordertype: "stop-loss", price: (price / (1 + stop_loss / 100)).toFixed(priceDecimals) } },
+            ...take_profit && { close: { ordertype: "take-profit", price: (price * (1 + take_profit / 100)).toFixed(priceDecimals) } },
             deadline: new Date(Date.now() + 30000).toISOString() // 30 seconds from now
         };
 
