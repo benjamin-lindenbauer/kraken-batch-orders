@@ -51,7 +51,7 @@ function getMessageSignature(path, postData, secret, nonce) {
 const router = Router();
 
 router.post('/api/batch-orders', async (req, res) => {
-    const { asset, price: startPrice, direction, numOrders, distance, volume_distance, total, stop_loss, take_profit } = req.body;
+    const { asset, price: startPrice, direction, numOrders, leverage, distance, volume_distance, total, stop_loss, take_profit } = req.body;
     
     try {
         const pairInfo = getPairInfo(asset);
@@ -87,7 +87,7 @@ router.post('/api/batch-orders', async (req, res) => {
                 cl_ord_id: `${Date.now()}-${i}`,
                 volume: volume.toFixed(8),
                 pair: asset,
-                leverage: pairInfo.leverage
+                ...leverage >= 1 && { leverage: leverage }
             }
             if (stop_loss) order.close = {
                 ordertype: "stop-loss",
@@ -134,7 +134,7 @@ router.post('/api/batch-orders', async (req, res) => {
 });
 
 router.post('/api/add-order', async (req, res) => {
-    const { asset, price, direction, total, stop_loss, take_profit } = req.body;
+    const { asset, price, direction, leverage, total, stop_loss, take_profit } = req.body;
     
     try {
         const pairInfo = getPairInfo(asset);
@@ -155,7 +155,7 @@ router.post('/api/add-order', async (req, res) => {
             clOrdId: `${Date.now()}`,
             volume: (total / price).toFixed(8),
             pair: asset,
-            leverage: pairInfo.leverage,
+            ...leverage >= 1 && { leverage: leverage },
             ...stop_loss && { close: { ordertype: "stop-loss", price: (price / (1 + stop_loss / 100)).toFixed(priceDecimals) } },
             ...take_profit && { close: { ordertype: "take-profit", price: (price * (1 + take_profit / 100)).toFixed(priceDecimals) } },
             deadline: new Date(Date.now() + 30000).toISOString() // 30 seconds from now

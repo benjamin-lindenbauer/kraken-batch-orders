@@ -291,11 +291,14 @@ function updateTotalVolume(asset, newLeverage) {
 function populateAssetOptions() {
     const assetSelect = document.getElementById('asset');
     const assets = window.getSupportedAssets();
+    const assetInfo = window.getPairInfo(assets[0]);
     
     assetSelect.innerHTML = assets.map(asset => {
-        const info = window.getPairInfo(asset);
-        return `<option value="${asset}">${info.name} (${asset})</option>`;
+        return `<option value="${asset}">${assetInfo.name} (${asset})</option>`;
     }).join('');
+    
+    assetSelect.value = assets[0];
+    document.getElementById('leverage').value = assetInfo.leverage;
 }
 
 async function getTradeBalance() {
@@ -397,6 +400,7 @@ async function createOrders(event) {
         price: parseFloat(document.getElementById('start_price').value),
         direction: document.getElementById('direction').value,
         numOrders,
+        leverage: parseInt(document.getElementById('leverage').value),
         distance: parseFloat(document.getElementById('distance').value),
         volume_distance: parseFloat(document.getElementById('volume_distance').value),
         total: parseFloat(document.getElementById('total').value),
@@ -567,8 +571,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const asset = document.getElementById('asset').value;
         const pairInfo = getPairInfo(asset);
         const maxLeverage = pairInfo ? parseInt(pairInfo.leverage) : 5;
-        const newLeverage = Math.min(maxLeverage, parseInt(this.value));
-        document.getElementById('leverage').value = newLeverage;
+        const newLeverage = Math.min(maxLeverage, parseInt(this.value) || 1);
+        if (this.value !== 'spot') document.getElementById('leverage').value = newLeverage;
         updateTotalVolume(asset, newLeverage);
         updateStartPrice();
     });

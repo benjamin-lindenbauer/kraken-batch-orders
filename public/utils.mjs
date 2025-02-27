@@ -5,7 +5,8 @@ export const TRADING_PAIRS = {
         symbol: 'BTC',
         name: 'Bitcoin',
         leverage: '5',
-        priceDecimals: 1
+        priceDecimals: 1,
+        default: true
     },
     'ETH/USD': {
         symbol: 'ETH',
