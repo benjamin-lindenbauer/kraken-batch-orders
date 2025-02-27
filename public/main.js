@@ -291,14 +291,14 @@ function updateTotalVolume(asset, newLeverage) {
 function populateAssetOptions() {
     const assetSelect = document.getElementById('asset');
     const assets = window.getSupportedAssets();
-    const assetInfo = window.getPairInfo(assets[0]);
-    
+
     assetSelect.innerHTML = assets.map(asset => {
+        const assetInfo = window.getPairInfo(asset);
         return `<option value="${asset}">${assetInfo.name} (${asset})</option>`;
     }).join('');
-    
+
     assetSelect.value = assets[0];
-    document.getElementById('leverage').value = assetInfo.leverage;
+    document.getElementById('leverage').value = window.getPairInfo(assets[0]).leverage;
 }
 
 async function getTradeBalance() {
