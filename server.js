@@ -84,7 +84,6 @@ router.post('/api/batch-orders', async (req, res) => {
                 ordertype: "limit",
                 price: orderPrice.toFixed(priceDecimals),
                 type: direction,
-                cl_ord_id: `${Date.now()}-${i}`,
                 volume: volume.toFixed(6 - priceDecimals),
                 pair: asset,
                 ...leverage >= 1 && { leverage: leverage }
