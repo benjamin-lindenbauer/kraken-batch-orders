@@ -99,35 +99,52 @@ router.post('/api/batch-orders', async (req, res) => {
             orders.push(order);
         }
 
-        const nonce = generateNonce();
+        let nonce = generateNonce();
         const path = '/0/private/AddOrderBatch';
 
-        const requestData = {
-            nonce: nonce,
-            orders: orders,
-            pair: asset,
-            validate: false,
-            deadline: new Date(Date.now() + 30000).toISOString() // 30 seconds from now
-        };
+        const batchSize = 15;
+        const batches = [];
+        for (let i = 0; i < numOrders; i += batchSize) {
+            batches.push(orders.slice(i, i + batchSize));
+        }
 
-        const signature = getMessageSignature(path, JSON.stringify(requestData), process.env.KRAKEN_API_SECRET, nonce);
+        try {
+            const results = [];
+            for (const batch of batches) {
+                const requestData = {
+                    nonce: generateNonce(),
+                    orders: batch,
+                    pair: asset,
+                    validate: false,
+                    deadline: new Date(Date.now() + 30000).toISOString()
+                };
 
-        const config = {
-            method: 'post',
-            maxBodyLength: Infinity,
-            url: 'https://api.kraken.com' + path,
-            headers: { 
-                'Content-Type': 'application/json',
-                'API-Key': process.env.KRAKEN_API_KEY,
-                'API-Sign': signature
-            },
-            data: requestData
-        };
+                const signature = getMessageSignature(path, JSON.stringify(requestData), process.env.KRAKEN_API_SECRET, nonce);
 
-        const response = await axios(config);
-        
-        res.json(response.data);
+                const config = {
+                    method: 'post',
+                    maxBodyLength: Infinity,
+                    url: 'https://api.kraken.com' + path,
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'API-Key': process.env.KRAKEN_API_KEY,
+                        'API-Sign': signature
+                    },
+                    data: requestData
+                };
+
+                const response = await axios(config);
+                results.push(response.data);
+                nonce++;
+            }
+            
+            res.json(results);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: error.response?.data || error.message });
+        }
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: error.response?.data || error.message });
     }
 });
@@ -143,7 +160,7 @@ router.post('/api/add-order', async (req, res) => {
 
         const priceDecimals = pairInfo.priceDecimals;
 
-        const nonce = generateNonce();
+        let nonce = generateNonce();
         const path = '/0/private/AddOrder';
 
         const requestData = {
@@ -185,7 +202,7 @@ router.post('/api/add-order', async (req, res) => {
 router.post('/api/cancel-order', async (req, res) => {
     try {
         const { txid } = req.body;
-        const nonce = generateNonce();
+        let nonce = generateNonce();
         const path = '/0/private/CancelOrder';
         const data = {
             nonce: nonce,
@@ -220,7 +237,7 @@ router.post('/api/cancel-order', async (req, res) => {
 
 router.get('/api/open-orders', async (req, res) => {
     try {
-        const nonce = generateNonce();
+        let nonce = generateNonce();
         const path = '/0/private/OpenOrders';
         const data = {
             nonce: nonce
@@ -255,7 +272,7 @@ router.get('/api/open-orders', async (req, res) => {
 // Add the cancel-all endpoint
 router.post('/api/cancel-all', async (req, res) => {
     try {
-        const nonce = generateNonce();
+        let nonce = generateNonce();
         const path = '/0/private/CancelAll';
         const postData = `nonce=${nonce}`;
         
@@ -300,7 +317,7 @@ router.get('/api/ticker/:pair', async (req, res) => {
 
 router.get('/api/balances', async (req, res) => {
     try {
-        const nonce = generateNonce();
+        let nonce = generateNonce();
         const path = '/0/private/Balance';
         const data = {
             nonce: nonce
@@ -335,7 +352,7 @@ router.get('/api/balances', async (req, res) => {
 router.post('/api/trade-balance', async (req, res) => {
     try {
         const { asset } = req.body;
-        const nonce = generateNonce();
+        let nonce = generateNonce();
         const path = '/0/private/TradeBalance';
         const data = {
             nonce: nonce,
