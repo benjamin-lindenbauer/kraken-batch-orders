@@ -523,27 +523,17 @@ function updateLosses() {
 
 // Initialize everything when the DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
-    // Form input event listeners
+    // Event listeners
     document.querySelectorAll('#orderForm input, #orderForm select').forEach(element => {
         element.addEventListener('change', calculateOrders);
     });
-
-    // Update button text when number of orders changes
     document.getElementById('numOrders').addEventListener('input', function() {
         const createButton = document.getElementById('createButton');
         createButton.textContent = `Create ${this.value} Orders`;
     });
-    // Initialize button text
-    document.getElementById('createButton').textContent = `Create ${document.getElementById('numOrders').value} Orders`;
-
-    // Handle tab changes
     document.getElementById('open-tab').addEventListener('click', fetchOpenOrders);
     document.getElementById('refreshOrders').addEventListener('click', fetchOpenOrders);
     document.getElementById('cancelAll').addEventListener('click', cancelAllOrders);
-
-    // Button event listeners
-    document.getElementById('createButton').addEventListener('click', createOrders);
-
     document.getElementById('asset').addEventListener('change', function() {
         const pairInfo = getPairInfo(this.value);
         const maxLeverage = pairInfo ? parseInt(pairInfo.leverage) : 5;
@@ -552,21 +542,15 @@ document.addEventListener('DOMContentLoaded', () => {
         updateTotalVolume(this.value, Math.min(maxLeverage, currentLeverage));
         updateStartPrice();
     });
-
     document.getElementById('direction').addEventListener('change', updateFirstOrderPrice);
     document.getElementById('priceOffset').addEventListener('input', updateFirstOrderPrice);
-
-    // Stop Loss and Take Profit checkbox handlers
     document.getElementById('enableStopLoss').addEventListener('change', function() {
         document.getElementById('stop_loss').disabled = !this.checked;
     });
-
     document.getElementById('enableTakeProfit').addEventListener('change', function() {
         document.getElementById('take_profit').disabled = !this.checked;
     });
-
     document.getElementById('priceSlider').addEventListener('input', updateLosses);
-
     document.getElementById('leverage').addEventListener('change', function() {
         const asset = document.getElementById('asset').value;
         const pairInfo = getPairInfo(asset);
@@ -576,6 +560,7 @@ document.addEventListener('DOMContentLoaded', () => {
         updateTotalVolume(asset, newLeverage);
         updateStartPrice();
     });
+    document.getElementById('createButton').addEventListener('click', createOrders);
 
     // Initialize asset options
     populateAssetOptions();
