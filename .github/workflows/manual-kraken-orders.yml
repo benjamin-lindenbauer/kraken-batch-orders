@@ -12,6 +12,11 @@ on:
         description: 'Base price for the order'
         required: false
         type: number
+      spot:
+        description: 'Whether to use spot or margin'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   place-orders:
@@ -29,7 +34,7 @@ jobs:
       run: npm install
       
     - name: Run order script
-      run: node scripts/daily_orders.js ${{ github.event.inputs.coin }} ${{ github.event.inputs.base_price }}
+      run: node scripts/daily_orders.js ${{ github.event.inputs.coin }} ${{ github.event.inputs.base_price }} ${{ github.event.inputs.spot }}
       env:
         KRAKEN_API_KEY: ${{ secrets.KRAKEN_API_KEY }}
         KRAKEN_API_SECRET: ${{ secrets.KRAKEN_API_SECRET }}

@@ -27,6 +27,15 @@ const ORDERS_SETTINGS = {
         leverage: 5,
         priceDecimals: 5,
         pair: 'XRP/USD'
+    },
+    SUI: {
+        basePriceDistance: 0.115,
+        orderPriceDistance: 0.015,
+        stopLossDistance: 0.06,
+        takeProfitDistance: 0.12,
+        leverage: 3,
+        priceDecimals: 5,
+        pair: 'SUI/USD'
     }
 };
 
@@ -124,7 +133,7 @@ async function getHighestPrice(coin, since) {
     return Math.max(...prices);
 }
 
-async function manageDailyOrders(coin, basePriceArg) {
+async function manageDailyOrders(coin, basePriceArg, spot) {
     try {
         // Get trade balance
         const balanceInfo = await krakenRequest('/0/private/TradeBalance', { asset: 'ZUSD' });
@@ -206,7 +215,7 @@ async function manageDailyOrders(coin, basePriceArg) {
                 type: 'buy',
                 price: limitPrice.toFixed(settings.priceDecimals),
                 volume: volume.toFixed(8),
-                leverage: leverage,
+                ...!spot && { leverage: leverage },
                 close: {
                     ordertype: useStopLoss ? 'stop-loss' : 'take-profit',
                     price: useStopLoss ? stopLossPrice.toFixed(settings.priceDecimals) : takeProfitPrice.toFixed(settings.priceDecimals)
@@ -231,6 +240,7 @@ async function manageDailyOrders(coin, basePriceArg) {
 // Get coin and base price from command line arguments
 const coin = process.argv[2]?.toUpperCase() || 'XRP';
 const basePriceArg = process.argv[3] ? parseFloat(process.argv[3]) : undefined;
+const spot = process.argv[4] ? process.argv[4].toLowerCase() === 'true' : false;
 
 // Execute immediately
-manageDailyOrders(coin, basePriceArg);
+manageDailyOrders(coin, basePriceArg, spot);
