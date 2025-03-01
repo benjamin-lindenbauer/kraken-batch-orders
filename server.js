@@ -112,7 +112,7 @@ router.post('/api/batch-orders', async (req, res) => {
             const results = [];
             for (const batch of batches) {
                 const requestData = {
-                    nonce: generateNonce(),
+                    nonce: nonce,
                     orders: batch,
                     pair: asset,
                     validate: false,
