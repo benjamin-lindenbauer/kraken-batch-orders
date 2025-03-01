@@ -134,11 +134,11 @@ router.post('/api/batch-orders', async (req, res) => {
                 };
 
                 const response = await axios(config);
-                results.push(response.data);
+                results.push(...response.data.result.orders);
                 nonce++;
             }
             
-            res.json(results);
+            res.json({orders: results});
         } catch (error) {
             console.error(error);
             res.status(500).json({ error: error.response?.data || error.message });
@@ -193,7 +193,7 @@ router.post('/api/add-order', async (req, res) => {
 
         const response = await axios(config);
         
-        res.json(response.data);
+        res.json({orders: [response.data.result]});
     } catch (error) {
         res.status(500).json({ error: error.response?.data || error.message });
     }

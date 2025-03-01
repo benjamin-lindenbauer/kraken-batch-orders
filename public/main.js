@@ -423,10 +423,10 @@ async function createOrders(event) {
         } else {                
             const orderDetails = document.getElementById('orderDetails');
             const orderList = document.getElementById('orderList');
-            orderList.innerHTML = response.result.orders ? response.result.orders.map(order => 
+            orderList.innerHTML = response.orders ? response.orders.map(order => 
                 order.error ? `<div class="text-danger">${order.error}</div>` :
                 `<div>${order.descr.order}</div>`
-            ).join('') : `<div>${response.result.descr?.order}</div>`;
+            ).join('') : '';
             orderDetails.style.display = 'block';
         }
     } catch (error) {
