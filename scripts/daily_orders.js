@@ -195,7 +195,7 @@ async function manageDailyOrders(coin, basePriceArg, spot) {
         const basePrice = basePriceArg || Math.min(currentPrice / (1 + orderPriceDistance), highestPrice / (1 + basePriceDistance));
         const stopLossDistance = settings.stopLossDistance;
         const takeProfitDistance = settings.takeProfitDistance;
-        const leverage = settings.leverage;
+        const leverage = spot ? 1 : settings.leverage;
         const pair = settings.pair;
         const baseVolume = 0.0315; // Volume of the first order
         const volumeIncrease = 0.005; // Increase in volume for each additional order
