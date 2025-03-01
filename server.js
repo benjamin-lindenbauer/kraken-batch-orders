@@ -102,7 +102,7 @@ router.post('/api/batch-orders', async (req, res) => {
         let nonce = generateNonce();
         const path = '/0/private/AddOrderBatch';
 
-        const batchSize = 15;
+        const batchSize = numOrders <= 15 || numOrders > 20 ? 15 : 10;
         const batches = [];
         for (let i = 0; i < numOrders; i += batchSize) {
             batches.push(orders.slice(i, i + batchSize));
