@@ -6,14 +6,18 @@ on:
       coin:
         description: 'Coin to trade'
         required: true
-        default: XRP
-        type: string
+        default: BTC
+        type: choice
+        options:
+          - BTC
+          - XRP
+          - SUI
       base_price:
         description: 'Base price for the order'
         required: false
         type: number
       spot:
-        description: 'Whether to use spot or margin'
+        description: 'Use spot, not margin'
         required: false
         default: false
         type: boolean
