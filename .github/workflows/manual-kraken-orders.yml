@@ -6,12 +6,26 @@ on:
       coin:
         description: 'Coin to trade'
         required: true
-        default: XRP
-        type: string
+        default: BTC
+        type: choice
+        options:
+          - BTC
+          - XRP
+          - SUI
       base_price:
         description: 'Base price for the order'
         required: false
         type: number
+      price_distance:
+        description: 'Distance in % between the order prices'
+        required: false
+        default: 1.0
+        type: number
+      spot:
+        description: 'Use spot, not margin'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   place-orders:
@@ -29,7 +43,7 @@ jobs:
       run: npm install
       
     - name: Run order script
-      run: node scripts/daily_orders.js ${{ github.event.inputs.coin }} ${{ github.event.inputs.base_price }}
+      run: node scripts/daily_orders.js ${{ github.event.inputs.coin }} ${{ github.event.inputs.base_price }} ${{ github.event.inputs.price_distance }} ${{ github.event.inputs.spot }}
       env:
         KRAKEN_API_KEY: ${{ secrets.KRAKEN_API_KEY }}
         KRAKEN_API_SECRET: ${{ secrets.KRAKEN_API_SECRET }}

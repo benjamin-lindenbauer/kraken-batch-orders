@@ -20,6 +20,12 @@ export const TRADING_PAIRS = {
         leverage: '5',
         priceDecimals: 5
     },
+    'SUI/USD': {
+        symbol: 'SUI',
+        name: 'Sui',
+        leverage: '3',
+        priceDecimals: 4
+    },
     'DOGE/USD': {
         symbol: 'DOGE',
         name: 'Dogecoin',
@@ -55,12 +61,6 @@ export const TRADING_PAIRS = {
         name: 'Stellar',
         leverage: '2',
         priceDecimals: 6
-    },
-    'SUI/USD': {
-        symbol: 'SUI',
-        name: 'Sui',
-        leverage: '3',
-        priceDecimals: 4
     }
 };
 

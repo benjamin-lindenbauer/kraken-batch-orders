@@ -12,7 +12,7 @@ const API_URL = 'https://api.kraken.com';
 const ORDERS_SETTINGS = {
     BTC: {
         basePriceDistance: 0.062,
-        orderPriceDistance: 0.012,
+        orderPriceDistance: 1.0,
         stopLossDistance: 0.04,
         takeProfitDistance: 0.08,
         leverage: 5,
@@ -21,12 +21,21 @@ const ORDERS_SETTINGS = {
     },
     XRP: {
         basePriceDistance: 0.115,
-        orderPriceDistance: 0.015,
+        orderPriceDistance: 1.5,
         stopLossDistance: 0.06,
         takeProfitDistance: 0.12,
         leverage: 5,
         priceDecimals: 5,
         pair: 'XRP/USD'
+    },
+    SUI: {
+        basePriceDistance: 0.115,
+        orderPriceDistance: 1.5,
+        stopLossDistance: 0.06,
+        takeProfitDistance: 0.12,
+        leverage: 3,
+        priceDecimals: 5,
+        pair: 'SUI/USD'
     }
 };
 
@@ -124,7 +133,7 @@ async function getHighestPrice(coin, since) {
     return Math.max(...prices);
 }
 
-async function manageDailyOrders(coin, basePriceArg) {
+async function manageDailyOrders(coin, basePriceArg, priceDistanceArg, spot) {
     try {
         // Get trade balance
         const balanceInfo = await krakenRequest('/0/private/TradeBalance', { asset: 'ZUSD' });
@@ -182,11 +191,11 @@ async function manageDailyOrders(coin, basePriceArg) {
         const totalOrders = 15;
         const settings = ORDERS_SETTINGS[coin];
         const basePriceDistance = settings.basePriceDistance;
-        const orderPriceDistance = settings.orderPriceDistance;
+        const orderPriceDistance = priceDistanceArg ? priceDistanceArg / 100 : settings.orderPriceDistance / 100;
         const basePrice = basePriceArg || Math.min(currentPrice / (1 + orderPriceDistance), highestPrice / (1 + basePriceDistance));
         const stopLossDistance = settings.stopLossDistance;
         const takeProfitDistance = settings.takeProfitDistance;
-        const leverage = settings.leverage;
+        const leverage = spot ? 1 : settings.leverage;
         const pair = settings.pair;
         const baseVolume = 0.0315; // Volume of the first order
         const volumeIncrease = 0.005; // Increase in volume for each additional order
@@ -206,7 +215,7 @@ async function manageDailyOrders(coin, basePriceArg) {
                 type: 'buy',
                 price: limitPrice.toFixed(settings.priceDecimals),
                 volume: volume.toFixed(8),
-                leverage: leverage,
+                ...!spot && { leverage: leverage },
                 close: {
                     ordertype: useStopLoss ? 'stop-loss' : 'take-profit',
                     price: useStopLoss ? stopLossPrice.toFixed(settings.priceDecimals) : takeProfitPrice.toFixed(settings.priceDecimals)
@@ -231,6 +240,8 @@ async function manageDailyOrders(coin, basePriceArg) {
 // Get coin and base price from command line arguments
 const coin = process.argv[2]?.toUpperCase() || 'XRP';
 const basePriceArg = process.argv[3] ? parseFloat(process.argv[3]) : undefined;
+const priceDistanceArg = process.argv[4] ? parseFloat(process.argv[4]) : undefined;
+const spot = process.argv[5] ? process.argv[5].toLowerCase() === 'true' : false;
 
 // Execute immediately
-manageDailyOrders(coin, basePriceArg);
+manageDailyOrders(coin, basePriceArg, priceDistanceArg, spot);
