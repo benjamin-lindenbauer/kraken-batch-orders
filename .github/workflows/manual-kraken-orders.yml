@@ -13,7 +13,7 @@ on:
           - XRP
           - SUI
       base_price:
-        description: 'Base price for the order'
+        description: 'First order price'
         required: false
         type: number
       price_distance:
