@@ -136,8 +136,10 @@ async function getHighestPrice(coin, since) {
 async function manageDailyOrders(coin, basePriceArg, priceDistanceArg, spot) {
     try {
         // Get trade balance
-        const balanceInfo = await krakenRequest('/0/private/TradeBalance', { asset: 'ZUSD' });
-        const tradeBalance = parseFloat(balanceInfo.tb);
+        const balanceInfo = await spot ? 
+            krakenRequest('/0/private/Balance') :
+            krakenRequest('/0/private/TradeBalance', { asset: 'ZUSD' });
+        const tradeBalance = parseFloat(spot ? balanceInfo.ZUSD : balanceInfo.tb);
         console.log(`Trade balance: $${tradeBalance.toFixed(2)}`);
 
         // Get and cancel all buy orders
