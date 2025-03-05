@@ -137,8 +137,8 @@ async function manageDailyOrders(coin, basePriceArg, priceDistanceArg, spot) {
     try {
         // Get trade balance
         const balanceInfo = await spot ? 
-            krakenRequest('/0/private/Balance') :
-            krakenRequest('/0/private/TradeBalance', { asset: 'ZUSD' });
+            krakenRequest('/0/private/Balance', {}, true) :
+            krakenRequest('/0/private/TradeBalance', { asset: 'ZUSD' }, true);
         const tradeBalance = parseFloat(spot ? balanceInfo.ZUSD : balanceInfo.tb);
         console.log(`Trade balance: $${tradeBalance.toFixed(2)}`);
 
