@@ -127,8 +127,7 @@ async function updateStartPrice() {
         const data = await response.json();
         
         if (data.error && data.error.length > 0) {
-            document.getElementById('currentPrice').textContent = 'Error fetching price';
-            return;
+            throw new Error(`Error fetching price: ${data.error}`);
         }
         
         const result = data.result[Object.keys(data.result)[0]];
@@ -139,6 +138,7 @@ async function updateStartPrice() {
     } catch (error) {
         console.error('Error fetching price:', error);
         document.getElementById('currentPrice').textContent = 'Error fetching price';
+        calculateOrders();
     }
 }
 
