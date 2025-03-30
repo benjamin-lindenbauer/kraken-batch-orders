@@ -13,6 +13,7 @@ function calculateOrders() {
     const direction = document.getElementById('direction').value;
     const total = parseFloat(document.getElementById('total').value);
     const asset = document.getElementById('asset').value;
+    const leverage = document.getElementById('leverage').value;
 
     if (!price || !numOrders || !distance || !volumeDistance || !total) {
         document.getElementById('previewTable').innerHTML = '<p>Please fill in all fields</p>';
@@ -83,7 +84,7 @@ function calculateOrders() {
     });
 
     // Calculate liquidation price
-    const liquidationPrice = totalCoins > 0 
+    const liquidationPrice = leverage === 'spot' ? 0 : totalCoins > 0 
         ? ((direction === 'buy' 
             ? (totalValue - totalBalance) 
             : (totalValue + totalBalance)) / totalCoins).toFixed(priceDecimals)
