@@ -559,7 +559,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const newLeverage = Math.min(maxLeverage, parseInt(this.value) || 1);
         if (this.value !== 'spot') document.getElementById('leverage').value = newLeverage;
         updateTotalVolume(asset, newLeverage);
-        updateStartPrice();
     });
     document.getElementById('createButton').addEventListener('click', createOrders);
 

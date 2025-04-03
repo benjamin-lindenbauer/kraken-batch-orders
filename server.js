@@ -86,7 +86,7 @@ router.post('/api/batch-orders', async (req, res) => {
                 type: direction,
                 volume: volume.toFixed(6 - priceDecimals),
                 pair: asset,
-                ...leverage >= 1 && { leverage: leverage }
+                ...leverage > 1 && { leverage: leverage }
             }
             if (stop_loss) order.close = {
                 ordertype: "stop-loss",
@@ -134,6 +134,9 @@ router.post('/api/batch-orders', async (req, res) => {
                 };
 
                 const response = await axios(config);
+                if (response.data.error && response.data.error.length > 0) {
+                    return res.status(400).json({ error: response.data.error });
+                }
                 results.push(...response.data.result.orders);
                 nonce++;
             }
@@ -171,7 +174,7 @@ router.post('/api/add-order', async (req, res) => {
             clOrdId: `${Date.now()}`,
             volume: (total / price).toFixed(6 - priceDecimals),
             pair: asset,
-            ...leverage >= 1 && { leverage: leverage },
+            ...leverage > 1 && { leverage: leverage },
             ...stop_loss && { close: { ordertype: "stop-loss", price: (price / (1 + stop_loss / 100)).toFixed(priceDecimals) } },
             ...take_profit && { close: { ordertype: "take-profit", price: (price * (1 + take_profit / 100)).toFixed(priceDecimals) } },
             deadline: new Date(Date.now() + 30000).toISOString() // 30 seconds from now
