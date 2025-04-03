@@ -285,7 +285,8 @@ function updateTotalVolume(asset, newLeverage) {
     if (pairInfo) {
         const totalBalance = parseFloat(document.getElementById('totalBalance').textContent.replace('Total $', ''));
         const leverage = parseInt(newLeverage || document.getElementById('leverage').value);
-        document.getElementById('total').value = totalBalance * (leverage || 1);
+        document.getElementById('total').value = totalBalance * (leverage || 2);
+        calculateOrders();
     }
 }
 
@@ -324,7 +325,7 @@ async function getTradeBalance() {
         // Get the trade balance and update the total input field
         document.getElementById('totalBalance').textContent = `Total $${parseInt(data.result.eb)}`;
         const leverage = parseInt(document.getElementById('leverage').value);
-        document.getElementById('total').value = parseInt(data.result.tb) * (leverage || 1);
+        document.getElementById('total').value = parseInt(data.result.tb) * (leverage || 2);
     } catch (error) {
         console.error('Error fetching trade balance:', error);
     }
@@ -556,7 +557,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const asset = document.getElementById('asset').value;
         const pairInfo = getPairInfo(asset);
         const maxLeverage = pairInfo ? parseInt(pairInfo.leverage) : 5;
-        const newLeverage = Math.min(maxLeverage, parseInt(this.value) || 1);
+        const newLeverage = Math.min(maxLeverage, parseInt(this.value) || 2);
         if (this.value !== 'spot') document.getElementById('leverage').value = newLeverage;
         updateTotalVolume(asset, newLeverage);
     });
