@@ -349,7 +349,7 @@ async function updateBalances() {
         // Filter and sort balances
         const significantBalances = Object.entries(balances)
             .filter(([, amount]) => parseFloat(amount) > 0.001)
-            .map(([currency, amount]) => [currency.replace('ZUSD', 'USD').replace('XXBT', 'XBT'), amount])
+            .map(([currency, amount]) => [currency.replace('ZUSD', 'USD').replace('ZEUR', 'EUR').replace('XXBT', 'XBT'), amount])
             .sort(([, a], [, b]) => parseFloat(b) - parseFloat(a));
 
         // Display top 3 balances
