@@ -86,7 +86,7 @@ router.post('/api/batch-orders', async (req, res) => {
                 type: direction,
                 volume: volume.toFixed(6 - priceDecimals),
                 pair: asset,
-                ...leverage > 1 && { leverage: leverage }
+                ...leverage > 1 && { leverage: pairInfo.leverage }
             }
             if (stop_loss) order.close = {
                 ordertype: "stop-loss",
