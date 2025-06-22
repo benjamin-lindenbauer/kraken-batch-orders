@@ -11,7 +11,7 @@ on:
         options:
           - BTC
           - XRP
-          - SUI
+          - ETH
       base_price:
         description: 'First order price'
         required: false
