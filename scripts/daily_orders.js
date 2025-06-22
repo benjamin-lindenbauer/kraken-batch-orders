@@ -12,19 +12,28 @@ const API_URL = 'https://api.kraken.com';
 const ORDERS_SETTINGS = {
     BTC: {
         basePriceDistance: 0.062,
-        orderPriceDistance: 1.0,
+        orderPriceDistance: 0.5,
         stopLossDistance: 0.04,
         takeProfitDistance: 0.08,
         leverage: 5,
         priceDecimals: 1,
         pair: 'BTC/USD'
     },
+    ETH: {
+        basePriceDistance: 0.062,
+        orderPriceDistance: 1.0,
+        stopLossDistance: 0.04,
+        takeProfitDistance: 0.08,
+        leverage: 3,
+        priceDecimals: 1,
+        pair: 'ETH/USD'
+    },
     XRP: {
         basePriceDistance: 0.115,
         orderPriceDistance: 1.5,
         stopLossDistance: 0.06,
         takeProfitDistance: 0.12,
-        leverage: 5,
+        leverage: 3,
         priceDecimals: 5,
         pair: 'XRP/USD'
     },
