@@ -23,7 +23,7 @@ export const TRADING_PAIRS = {
     'SUI/USD': {
         symbol: 'SUI',
         name: 'Sui',
-        leverage: '3',
+        leverage: '5',
         priceDecimals: 4
     },
     'DOGE/USD': {
@@ -35,33 +35,22 @@ export const TRADING_PAIRS = {
     'SOL/USD': {
         symbol: 'SOL',
         name: 'Solana',
-        leverage: '4',
+        leverage: '5',
         priceDecimals: 2
-    },
-    'LINK/USD': {
-        symbol: 'LINK',
-        name: 'Chainlink',
-        leverage: '3',
-        priceDecimals: 4
-    },
-    'PEPE/USD': {
-        symbol: 'PEPE',
-        name: 'Pepe',
-        leverage: '3',
-        priceDecimals: 8
     },
     'ADA/USD': {
         symbol: 'ADA',
         name: 'Cardano',
-        leverage: '3',
+        leverage: '5',
         priceDecimals: 6
     },
-    'XLM/USD': {
-        symbol: 'XLM',
-        name: 'Stellar',
-        leverage: '2',
-        priceDecimals: 6
-    }
+    'LINK/USD': {
+        symbol: 'LINK',
+        name: 'Chainlink',
+        leverage: '5',
+        priceDecimals: 4
+    },
+
 };
 
 // Get all supported assets
