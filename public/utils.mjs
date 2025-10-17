@@ -50,6 +50,24 @@ export const TRADING_PAIRS = {
         leverage: '5',
         priceDecimals: 4
     },
+    'BNB/USD': {
+        symbol: 'BNB',
+        name: 'Binance',
+        leverage: '3',
+        priceDecimals: 2
+    },
+    'XLM/USD': {
+        symbol: 'XLM',
+        name: 'Stellar',
+        leverage: '2',
+        priceDecimals: 6
+    },
+    'ZEC/USD': {
+        symbol: 'ZEC',
+        name: 'Zcash',
+        leverage: '2',
+        priceDecimals: 2
+    },
 
 };
 
