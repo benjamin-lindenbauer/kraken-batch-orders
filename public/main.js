@@ -177,24 +177,51 @@ async function fetchOpenOrders() {
             return;
         }
 
-        // Convert orders object to array and sort by price in descending order
+        // Convert orders object to array and sort by pair first, then by price in descending order
         const sortedOrders = Object.entries(openOrders)
-            .sort(([, a], [, b]) => parseFloat(b.descr.price) - parseFloat(a.descr.price));
+            .sort(([, a], [, b]) => {
+                if (a.descr.pair !== b.descr.pair) {
+                    return a.descr.pair.localeCompare(b.descr.pair);
+                }
+                return parseFloat(b.descr.price) - parseFloat(a.descr.price);
+            });
 
-        tbody.innerHTML = sortedOrders.map(([orderId, order]) => `
-            <tr id="order-${orderId}">
-                <td>${order.descr.pair}</td>
-                <td>${order.descr.type}</td>
-                <td>${order.descr.price}</td>
-                <td>${order.vol}</td>
-                <td>$${(parseFloat(order.descr.price) * parseFloat(order.vol)).toFixed(2)}</td>
-                <td>
-                    <button class="btn btn-danger btn-sm" onclick="cancelOrder('${orderId}', document.getElementById('order-${orderId}'))">
-                        Cancel
-                    </button>
-                </td>
-            </tr>
-        `).join('');
+        // Group orders by pair to identify last row of each pair
+        const ordersByPair = {};
+        sortedOrders.forEach(([orderId, order]) => {
+            const pair = order.descr.pair;
+            if (!ordersByPair[pair]) {
+                ordersByPair[pair] = [];
+            }
+            ordersByPair[pair].push(orderId);
+        });
+
+        tbody.innerHTML = sortedOrders.map(([orderId, order], index) => {
+            const pair = order.descr.pair;
+            const pairOrders = ordersByPair[pair];
+            const isLastOfPair = pairOrders[pairOrders.length - 1] === orderId;
+            const showCancelAllButton = isLastOfPair && pairOrders.length > 1;
+            
+            return `
+                <tr id="order-${orderId}">
+                    <td>${order.descr.pair}</td>
+                    <td>${order.descr.type}</td>
+                    <td>${order.descr.price}</td>
+                    <td>${order.vol}</td>
+                    <td>$${(parseFloat(order.descr.price) * parseFloat(order.vol)).toFixed(2)}</td>
+                    <td>
+                        <button class="btn btn-danger btn-sm" onclick="cancelOrder('${orderId}', document.getElementById('order-${orderId}'))">
+                            Cancel
+                        </button>
+                        ${showCancelAllButton ? `
+                        <button class="btn btn-warning btn-sm ms-1" onclick="cancelAllOfPair('${pair}', ${JSON.stringify(pairOrders)})">
+                            Cancel All ${pair}
+                        </button>
+                        ` : ''}
+                    </td>
+                </tr>
+            `;
+        }).join('');
     } catch (error) {
         document.getElementById('openOrdersTable').innerHTML = 
             `<tr><td colspan="6" class="text-center text-danger">Error loading orders: ${error.message}</td></tr>`;
@@ -276,6 +303,56 @@ async function cancelAllOrders() {
     } catch (error) {
         errorDiv.className = 'alert alert-danger mt-3';
         errorDiv.textContent = 'Error canceling all orders: ' + error.message;
+        errorDiv.style.display = 'block';
+    }
+}
+
+async function cancelAllOfPair(pair, orderIds) {
+    const errorDiv = document.getElementById('orderError');
+    errorDiv.style.display = 'none';
+    
+    try {
+        const response = await fetch('/api/cancel-all-of-pair', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ orderIds })
+        });
+
+        const result = await response.json();
+        
+        if (result.error && result.error.length > 0) {
+            errorDiv.className = 'alert alert-danger mt-3';
+            errorDiv.textContent = `Error canceling ${pair} orders: ` + result.error.join(', ');
+            errorDiv.style.display = 'block';
+            return;
+        }
+
+        errorDiv.className = 'alert alert-success mt-3';
+        errorDiv.textContent = `Successfully canceled ${result.count || orderIds.length} ${pair} orders`;
+        errorDiv.style.display = 'block';
+
+        // Remove the canceled orders from the table
+        orderIds.forEach(orderId => {
+            const row = document.getElementById(`order-${orderId}`);
+            if (row) row.remove();
+        });
+
+        // Update order count
+        const tbody = document.getElementById('openOrdersTable');
+        const remainingOrders = tbody.querySelectorAll('tr:not([colspan])').length;
+        const orderCountSpan = document.getElementById('openOrdersCount');
+        
+        if (remainingOrders === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No open orders</td></tr>';
+            orderCountSpan.textContent = '0 ';
+        } else {
+            orderCountSpan.textContent = `${remainingOrders} `;
+        }
+    } catch (error) {
+        errorDiv.className = 'alert alert-danger mt-3';
+        errorDiv.textContent = `Error canceling ${pair} orders: ` + error.message;
         errorDiv.style.display = 'block';
     }
 }

@@ -308,6 +308,50 @@ router.post('/api/cancel-all', async (req, res) => {
     }
 });
 
+// Add the cancel-all-of-pair endpoint using CancelOrderBatch
+router.post('/api/cancel-all-of-pair', async (req, res) => {
+    try {
+        const { orderIds } = req.body;
+        
+        if (!orderIds || !Array.isArray(orderIds) || orderIds.length === 0) {
+            return res.status(400).json({ error: ['No order IDs provided'] });
+        }
+
+        let nonce = generateNonce();
+        const path = '/0/private/CancelOrderBatch';
+        
+        const requestData = {
+            nonce: nonce,
+            orders: orderIds
+        };
+
+        const signature = getMessageSignature(path, JSON.stringify(requestData), process.env.KRAKEN_API_SECRET, nonce);
+
+        const config = {
+            method: 'post',
+            maxBodyLength: Infinity,
+            url: 'https://api.kraken.com' + path,
+            headers: { 
+                'Content-Type': 'application/json',
+                'API-Key': process.env.KRAKEN_API_KEY,
+                'API-Sign': signature
+            },
+            data: requestData
+        };
+
+        const response = await axios(config);
+        
+        if (response.data.error && response.data.error.length > 0) {
+            return res.status(400).json({ error: response.data.error });
+        }
+        
+        res.json(response.data.result);
+    } catch (error) {
+        console.error('Error canceling orders:', error.response?.data || error.message);
+        res.status(500).json({ error: [error.response?.data?.error || error.message] });
+    }
+});
+
 router.get('/api/ticker/:pair', async (req, res) => {
     try {
         const pair = req.params.pair;
