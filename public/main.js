@@ -214,7 +214,7 @@ async function fetchOpenOrders() {
                             Cancel
                         </button>
                         ${showCancelAllButton ? `
-                        <button class="btn btn-warning btn-sm ms-1" onclick="cancelAllOfPair('${pair}', ${JSON.stringify(pairOrders)})">
+                        <button class="btn btn-warning btn-sm ms-1 cancel-all-pair" data-pair="${pair}" data-order-ids='${JSON.stringify(pairOrders)}'>
                             Cancel All ${pair}
                         </button>
                         ` : ''}
@@ -222,6 +222,15 @@ async function fetchOpenOrders() {
                 </tr>
             `;
         }).join('');
+
+        // Add event listeners for cancel all pair buttons
+        document.querySelectorAll('.cancel-all-pair').forEach(button => {
+            button.addEventListener('click', function() {
+                const pair = this.getAttribute('data-pair');
+                const orderIds = JSON.parse(this.getAttribute('data-order-ids'));
+                cancelAllOfPair(pair, orderIds);
+            });
+        });
     } catch (error) {
         document.getElementById('openOrdersTable').innerHTML = 
             `<tr><td colspan="6" class="text-center text-danger">Error loading orders: ${error.message}</td></tr>`;
