@@ -68,6 +68,12 @@ export const TRADING_PAIRS = {
         leverage: '2',
         priceDecimals: 2
     },
+    'PAXG/USD': {
+        symbol: 'PAXG',
+        name: 'Paxos Gold',
+        leverage: '3',
+        priceDecimals: 2
+    },
 
 };
 
