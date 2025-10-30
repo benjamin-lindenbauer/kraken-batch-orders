@@ -1,6 +1,44 @@
 let orders = [];
 
 // Functions
+function copyOrderId(orderId) {
+    if (!orderId) return;
+
+    const writePromise = navigator.clipboard?.writeText?.(orderId);
+    if (writePromise && typeof writePromise.then === 'function') {
+        writePromise.catch(err => {
+            console.error('Failed to copy order ID via Clipboard API:', err);
+            fallbackCopyOrderId(orderId);
+        });
+    } else {
+        fallbackCopyOrderId(orderId);
+    }
+}
+
+function fallbackCopyOrderId(orderId) {
+    const textarea = document.createElement('textarea');
+    textarea.value = orderId;
+    textarea.setAttribute('readonly', '');
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+        document.execCommand('copy');
+    } catch (err) {
+        console.error('Fallback copy failed:', err);
+    } finally {
+        document.body.removeChild(textarea);
+    }
+}
+
+function formatOpenTime(opentm) {
+    if (opentm === undefined || opentm === null) return '-';
+    const timestamp = Number(opentm) * 1000;
+    if (Number.isNaN(timestamp)) return '-';
+    return new Date(timestamp).toLocaleString();
+}
+
 function calculateOrders() {
     const price = parseFloat(document.getElementById('start_price').value);
     const numOrders = parseInt(document.getElementById('numOrders').value);
@@ -149,7 +187,7 @@ async function fetchOpenOrders() {
     const orderCountSpan = document.getElementById('openOrdersCount');
     errorDiv.classList.add('is-hidden');
     
-    tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading orders...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" class="text-center">Loading orders...</td></tr>';
     orderCountSpan.textContent = '';
     
     try {
@@ -163,7 +201,7 @@ async function fetchOpenOrders() {
         const result = await response.json();
         
         if (result.error && result.error.length > 0) {
-            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">${result.error.join(', ')}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="10" class="text-center text-danger">${result.error.join(', ')}</td></tr>`;
             orderCountSpan.textContent = '0 ';
             return;
         }
@@ -173,7 +211,7 @@ async function fetchOpenOrders() {
         orderCountSpan.textContent = `${orderCount} `;
 
         if (orderCount === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No open orders</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center">No open orders</td></tr>';
             return;
         }
 
@@ -196,26 +234,40 @@ async function fetchOpenOrders() {
             ordersByPair[pair].push(orderId);
         });
 
-        tbody.innerHTML = sortedOrders.map(([orderId, order], index) => {
+        tbody.innerHTML = sortedOrders.map(([orderId, order]) => {
             const pair = order.descr.pair;
             const pairOrders = ordersByPair[pair];
             const isLastOfPair = pairOrders[pairOrders.length - 1] === orderId;
             const showCancelAllButton = isLastOfPair && pairOrders.length > 1;
+            const orderType = order.descr.ordertype || '-';
+            const price = parseFloat(order.descr.price);
+            const volume = parseFloat(order.vol);
+            const totalValue = Number.isFinite(price) && Number.isFinite(volume)
+                ? `$${(price * volume).toFixed(2)}`
+                : '-';
+            const openTime = formatOpenTime(order.opentm);
             
             return `
                 <tr id="order-${orderId}">
+                    <td>
+                        <div class="btn p-0 order-id-button" data-order-id="${orderId}" title="Click to copy order ID">
+                            ${orderId}
+                        </div>
+                    </td>
                     <td>${order.descr.pair}</td>
                     <td>${order.descr.type}</td>
+                    <td>${orderType}</td>
                     <td>${order.descr.leverage}</td>
                     <td>${order.descr.price}</td>
                     <td>${order.vol}</td>
-                    <td>$${(parseFloat(order.descr.price) * parseFloat(order.vol)).toFixed(2)}</td>
+                    <td>${totalValue}</td>
+                    <td>${openTime}</td>
                     <td>
-                        <button class="btn btn-outline-danger btn-sm" onclick="cancelOrder('${orderId}', document.getElementById('order-${orderId}'))">
+                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="cancelOrder('${orderId}', document.getElementById('order-${orderId}'))">
                             Cancel
                         </button>
                         ${showCancelAllButton ? `
-                        <button class="btn btn-outline-danger btn-sm ms-1 cancel-all-pair" data-pair="${pair}" data-order-ids='${JSON.stringify(pairOrders)}'>
+                        <button type="button" class="btn btn-outline-danger btn-sm ms-1 cancel-all-pair" data-pair="${pair}" data-order-ids='${JSON.stringify(pairOrders)}'>
                             Cancel All ${pair}
                         </button>
                         ` : ''}
@@ -232,9 +284,16 @@ async function fetchOpenOrders() {
                 cancelAllOfPair(pair, orderIds);
             });
         });
+        document.querySelectorAll('.order-id-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const id = this.getAttribute('data-order-id');
+                copyOrderId(id);
+                this.blur();
+            });
+        });
     } catch (error) {
         document.getElementById('openOrdersTable').innerHTML = 
-            `<tr><td colspan="7" class="text-center text-danger">Error loading orders: ${error.message}</td></tr>`;
+            `<tr><td colspan="10" class="text-center text-danger">Error loading orders: ${error.message}</td></tr>`;
     }
 }
 
@@ -265,7 +324,7 @@ async function cancelOrder(txid, rowElement) {
         const orderCountSpan = document.getElementById('openOrdersCount');
         
         if (remainingOrders === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No open orders</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center">No open orders</td></tr>';
             orderCountSpan.textContent = '0 ';
         } else {
             orderCountSpan.textContent = `${remainingOrders} `;
@@ -302,9 +361,9 @@ async function cancelAllOrders() {
 
         if (!result.pending) {
             const tbody = document.getElementById('openOrdersTable');
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No open orders</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center">No open orders</td></tr>';
         } else {
-            const cancelButtons = document.querySelectorAll('#openOrdersTable button');
+            const cancelButtons = document.querySelectorAll('#openOrdersTable button.btn-outline-danger');
             cancelButtons.forEach(btn => {
                 btn.disabled = true;
                 btn.textContent = 'Canceling...';
@@ -355,7 +414,7 @@ async function cancelAllOfPair(pair, orderIds) {
         const orderCountSpan = document.getElementById('openOrdersCount');
         
         if (remainingOrders === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No open orders</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center">No open orders</td></tr>';
             orderCountSpan.textContent = '0 ';
         } else {
             orderCountSpan.textContent = `${remainingOrders} `;

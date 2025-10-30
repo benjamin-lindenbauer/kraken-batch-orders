@@ -41,7 +41,7 @@ a:hover {
 }
 
 .container.app-container {
-  max-width: 1220px;
+  max-width: 1500px;
   margin: 0 auto;
   background: var(--surface);
   border-radius: 24px;
