@@ -206,15 +206,16 @@ async function fetchOpenOrders() {
                 <tr id="order-${orderId}">
                     <td>${order.descr.pair}</td>
                     <td>${order.descr.type}</td>
+                    <td>${order.descr.leverage}</td>
                     <td>${order.descr.price}</td>
                     <td>${order.vol}</td>
                     <td>$${(parseFloat(order.descr.price) * parseFloat(order.vol)).toFixed(2)}</td>
                     <td>
-                        <button class="btn btn-danger btn-sm" onclick="cancelOrder('${orderId}', document.getElementById('order-${orderId}'))">
+                        <button class="btn btn-outline-danger btn-sm" onclick="cancelOrder('${orderId}', document.getElementById('order-${orderId}'))">
                             Cancel
                         </button>
                         ${showCancelAllButton ? `
-                        <button class="btn btn-warning btn-sm ms-1 cancel-all-pair" data-pair="${pair}" data-order-ids='${JSON.stringify(pairOrders)}'>
+                        <button class="btn btn-outline-danger btn-sm ms-1 cancel-all-pair" data-pair="${pair}" data-order-ids='${JSON.stringify(pairOrders)}'>
                             Cancel All ${pair}
                         </button>
                         ` : ''}
@@ -658,3 +659,18 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(updateStartPrice, 100);
     });
 });
+// Intercept cancel actions to confirm with the user before proceeding.
+// This uses a capturing listener so it runs before any existing handlers.
+document.addEventListener(
+  'click',
+  function (e) {
+    const target = e.target.closest('#cancelAll, .cancel-all-pair');
+    if (!target) return;
+    const ok = window.confirm('Really cancel orders?');
+    if (!ok) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+    }
+  },
+  true
+);
