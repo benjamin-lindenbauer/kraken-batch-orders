@@ -1,6 +1,6 @@
 # Kraken Batch Orders
 
-A web application for creating and managing batch orders on Kraken Futures. Efficiently create multiple orders with geometric price and volume progression, preview order details in real-time, and manage your open positions.
+A web application for creating and managing batch orders on Kraken (spot/margin). Efficiently create multiple orders with geometric price and volume progression, preview order details in real time, and manage your open positions.
 
 ## Features
 
@@ -34,9 +34,12 @@ A web application for creating and managing batch orders on Kraken Futures. Effi
 ### Order Management
 - **View all open orders** with pair, type, price, volume, and USD value
 - **Cancel individual orders** or all orders at once
+- **Cancel all orders for a specific pair** directly from the orders table
 - **Batch cancellation** for efficient position management
 - **Auto-refresh functionality** to keep order status current
 - **Account balance display** with total USD value
+
+Note: Destructive actions (Cancel All and Cancel All for Pair) prompt for confirmation in the UI to prevent accidental cancellations.
 
 ## Architecture
 
@@ -145,6 +148,47 @@ The application supports Netlify Functions for serverless deployment. Configurat
 - `GET /api/balances` - Get account balances
 - `POST /api/trade-balance` - Get trading balance for an asset
 
+## Automation
+
+- `scripts/daily_orders.js` — Node script that automates creating a daily batch of buy orders using the same geometric progression logic as the UI.
+  - Usage: `node scripts/daily_orders.js <COIN> [base_price] [price_distance] [spot]`
+    - `COIN`: One of `BTC`, `XRP`, `ETH`, `SUI` (defaults to `XRP` if omitted in code)
+    - `base_price` (optional): First order price
+    - `price_distance` (optional): Percent distance between order prices
+    - `spot` (optional): `true` to use spot (no leverage), otherwise margin
+  - Examples:
+    - `node scripts/daily_orders.js XRP`
+    - `node scripts/daily_orders.js BTC 65000 1.0 true`
+
+### GitHub Actions
+
+- `.github/workflows/daily-orders-btc.yml` — Schedules BTC orders daily at 15:00 UTC; can also be run manually with an optional `base_price` input.
+- `.github/workflows/daily-orders-xrp.yml` — Schedules XRP orders daily at 15:00 UTC; can also be run manually with an optional `base_price` input.
+- `.github/workflows/manual-kraken-orders.yml` — Manual workflow to place orders for `BTC`, `XRP`, or `ETH` with inputs: `coin`, `base_price`, `price_distance`, and `spot`.
+
+All workflows require repository secrets:
+- `KRAKEN_API_KEY`
+- `KRAKEN_API_SECRET`
+
+### Local Usage
+
+- Create a `.env` file in the project root with:
+  - `KRAKEN_API_KEY=...`
+  - `KRAKEN_API_SECRET=...`
+- Run the script locally:
+  - `node scripts/daily_orders.js <COIN> [base_price] [price_distance] [spot]`
+  - Examples:
+    - `node scripts/daily_orders.js XRP`
+    - `node scripts/daily_orders.js BTC 65000 1.0 true`
+
+Notes
+- The script places real orders using your API key. Use small sizes while testing.
+- Ensure your Kraken API key has only the minimal required permissions (trading; no withdrawal).
+
 ## License
 
 MIT License
+
+## Author
+
+- Benjamin Lindenbauer — https://github.com/benjamin-lindenbauer
