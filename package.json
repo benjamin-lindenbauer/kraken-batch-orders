@@ -1,18 +1,17 @@
 {
   "name": "kraken-batch-orders",
   "version": "1.0.0",
-  "description": "Kraken Futures Batch Order Management",
+  "description": "Kraken Order Management",
   "main": "server.js",
   "type": "module",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "@netlify/functions": "^2.8.2",
-    "axios": "^1.6.2",
+    "axios": "^1.13.1",
     "cors": "^2.8.5",
-    "dotenv": "^16.3.1",
-    "express": "^4.21.2",
-    "serverless-http": "^3.2.0"
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "serverless-http": "^4.0.0"
   }
 }
