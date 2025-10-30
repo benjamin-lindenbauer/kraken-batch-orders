@@ -1,4 +1,5 @@
 let orders = [];
+let openOrdersData = [];
 
 // Functions
 function copyOrderId(orderId) {
@@ -37,6 +38,142 @@ function formatOpenTime(opentm) {
     const timestamp = Number(opentm) * 1000;
     if (Number.isNaN(timestamp)) return '-';
     return new Date(timestamp).toLocaleString();
+}
+
+function updatePairFilterOptions(pairs) {
+    const pairFilter = document.getElementById('openOrdersPairFilter');
+    if (!pairFilter) return;
+
+    const uniquePairs = Array.from(new Set(pairs)).sort((a, b) => a.localeCompare(b));
+    const previousValue = pairFilter.value;
+    const options = ['<option value="">All pairs</option>'];
+
+    uniquePairs.forEach(pair => {
+        options.push(`<option value="${pair}">${pair}</option>`);
+    });
+
+    pairFilter.innerHTML = options.join('');
+
+    if (uniquePairs.includes(previousValue)) {
+        pairFilter.value = previousValue;
+    } else {
+        pairFilter.value = '';
+    }
+
+    pairFilter.disabled = uniquePairs.length === 0;
+}
+
+function renderOpenOrdersTable({ customMessage, messageClass } = {}) {
+    const tbody = document.getElementById('openOrdersTable');
+    if (!tbody) return;
+
+    const orderCountSpan = document.getElementById('openOrdersCount');
+    const pairFilter = document.getElementById('openOrdersPairFilter');
+    const selectedPair = pairFilter ? pairFilter.value : '';
+    const filteredData = selectedPair
+        ? openOrdersData.filter(([, order]) => order.descr.pair === selectedPair)
+        : openOrdersData.slice();
+
+    if (orderCountSpan) {
+        if (customMessage) {
+            orderCountSpan.textContent = '0 ';
+        } else if (selectedPair && selectedPair !== '' && filteredData.length !== openOrdersData.length) {
+            orderCountSpan.textContent = `${filteredData.length} (${openOrdersData.length} total) `;
+        } else {
+            orderCountSpan.textContent = `${filteredData.length} `;
+        }
+    }
+
+    if (customMessage) {
+        const classes = ['text-center'];
+        if (messageClass) classes.push(messageClass);
+        tbody.innerHTML = `<tr><td colspan="10" class="${classes.join(' ')}">${customMessage}</td></tr>`;
+        return;
+    }
+
+    if (filteredData.length === 0) {
+        const emptyMessage = selectedPair ? 'No open orders for this pair' : 'No open orders';
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center">${emptyMessage}</td></tr>`;
+        return;
+    }
+
+    const ordersByPair = {};
+    filteredData.forEach(([orderId, order]) => {
+        const pair = order.descr.pair;
+        if (!ordersByPair[pair]) {
+            ordersByPair[pair] = [];
+        }
+        ordersByPair[pair].push(orderId);
+    });
+
+    const rows = [];
+    filteredData.forEach(([orderId, order], index) => {
+        const pair = order.descr.pair;
+        const pairOrders = ordersByPair[pair];
+        const isLastOfPair = pairOrders[pairOrders.length - 1] === orderId;
+        const showCancelAllButton = isLastOfPair && pairOrders.length > 1;
+        const orderType = order.descr.ordertype || '-';
+        const price = parseFloat(order.descr.price);
+        const volume = parseFloat(order.vol);
+        const totalValue = Number.isFinite(price) && Number.isFinite(volume)
+            ? `$${(price * volume).toFixed(2)}`
+            : '-';
+        const openTime = formatOpenTime(order.opentm);
+
+        rows.push(`
+            <tr id="order-${orderId}">
+                <td>
+                    <button type="button" class="btn btn-link p-0 order-id-button" data-order-id="${orderId}" title="Copy order ID">
+                        ${orderId}
+                    </button>
+                </td>
+                <td>${pair}</td>
+                <td>${order.descr.type}</td>
+                <td>${orderType}</td>
+                <td>${order.descr.leverage}</td>
+                <td>${order.descr.price}</td>
+                <td>${order.vol}</td>
+                <td>${totalValue}</td>
+                <td>${openTime}</td>
+                <td>
+                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="cancelOrder('${orderId}', document.getElementById('order-${orderId}'))">
+                        Cancel
+                    </button>
+                    ${showCancelAllButton ? `
+                    <button type="button" class="btn btn-outline-danger btn-sm ms-1 cancel-all-pair" data-pair="${pair}" data-order-ids='${JSON.stringify(pairOrders)}'>
+                        Cancel All ${pair}
+                    </button>
+                    ` : ''}
+                </td>
+            </tr>
+        `);
+
+        if (isLastOfPair && index !== filteredData.length - 1) {
+            rows.push(`
+                <tr class="table-secondary table-group-separator">
+                    <td colspan="10" class="p-1"></td>
+                </tr>
+            `);
+        }
+    });
+
+    tbody.innerHTML = rows.join('');
+
+    tbody.querySelectorAll('.cancel-all-pair').forEach(button => {
+        button.addEventListener('click', function() {
+            const pair = this.getAttribute('data-pair');
+            const orderIds = JSON.parse(this.getAttribute('data-order-ids'));
+            cancelAllOfPair(pair, orderIds);
+        });
+    });
+
+    tbody.querySelectorAll('.order-id-button').forEach(button => {
+        button.addEventListener('click', function() {
+            const id = this.getAttribute('data-order-id');
+            copyOrderId(id);
+            this.blur();
+        });
+    });
 }
 
 function calculateOrders() {
@@ -188,7 +325,9 @@ async function fetchOpenOrders() {
     errorDiv.classList.add('is-hidden');
     
     tbody.innerHTML = '<tr><td colspan="10" class="text-center">Loading orders...</td></tr>';
-    orderCountSpan.textContent = '';
+    const pairFilter = document.getElementById('openOrdersPairFilter');
+    if (pairFilter) pairFilter.disabled = true;
+    if (orderCountSpan) orderCountSpan.textContent = '';
     
     try {
         const response = await fetch('/api/open-orders', {
@@ -201,21 +340,13 @@ async function fetchOpenOrders() {
         const result = await response.json();
         
         if (result.error && result.error.length > 0) {
-            tbody.innerHTML = `<tr><td colspan="10" class="text-center text-danger">${result.error.join(', ')}</td></tr>`;
-            orderCountSpan.textContent = '0 ';
+            openOrdersData = [];
+            updatePairFilterOptions([]);
+            renderOpenOrdersTable({ customMessage: result.error.join(', '), messageClass: 'text-danger' });
             return;
         }
 
         const openOrders = result.result.open || {};
-        const orderCount = Object.keys(openOrders).length;
-        orderCountSpan.textContent = `${orderCount} `;
-
-        if (orderCount === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center">No open orders</td></tr>';
-            return;
-        }
-
-        // Convert orders object to array and sort by pair first, then by price in descending order
         const sortedOrders = Object.entries(openOrders)
             .sort(([, a], [, b]) => {
                 if (a.descr.pair !== b.descr.pair) {
@@ -224,76 +355,14 @@ async function fetchOpenOrders() {
                 return parseFloat(b.descr.price) - parseFloat(a.descr.price);
             });
 
-        // Group orders by pair to identify last row of each pair
-        const ordersByPair = {};
-        sortedOrders.forEach(([orderId, order]) => {
-            const pair = order.descr.pair;
-            if (!ordersByPair[pair]) {
-                ordersByPair[pair] = [];
-            }
-            ordersByPair[pair].push(orderId);
-        });
-
-        tbody.innerHTML = sortedOrders.map(([orderId, order]) => {
-            const pair = order.descr.pair;
-            const pairOrders = ordersByPair[pair];
-            const isLastOfPair = pairOrders[pairOrders.length - 1] === orderId;
-            const showCancelAllButton = isLastOfPair && pairOrders.length > 1;
-            const orderType = order.descr.ordertype || '-';
-            const price = parseFloat(order.descr.price);
-            const volume = parseFloat(order.vol);
-            const totalValue = Number.isFinite(price) && Number.isFinite(volume)
-                ? `$${(price * volume).toFixed(2)}`
-                : '-';
-            const openTime = formatOpenTime(order.opentm);
-            
-            return `
-                <tr id="order-${orderId}">
-                    <td>
-                        <div class="btn p-0 order-id-button" data-order-id="${orderId}" title="Click to copy order ID">
-                            ${orderId}
-                        </div>
-                    </td>
-                    <td>${order.descr.pair}</td>
-                    <td>${order.descr.type}</td>
-                    <td>${orderType}</td>
-                    <td>${order.descr.leverage}</td>
-                    <td>${order.descr.price}</td>
-                    <td>${order.vol}</td>
-                    <td>${totalValue}</td>
-                    <td>${openTime}</td>
-                    <td>
-                        <button type="button" class="btn btn-outline-danger btn-sm" onclick="cancelOrder('${orderId}', document.getElementById('order-${orderId}'))">
-                            Cancel
-                        </button>
-                        ${showCancelAllButton ? `
-                        <button type="button" class="btn btn-outline-danger btn-sm ms-1 cancel-all-pair" data-pair="${pair}" data-order-ids='${JSON.stringify(pairOrders)}'>
-                            Cancel All ${pair}
-                        </button>
-                        ` : ''}
-                    </td>
-                </tr>
-            `;
-        }).join('');
-
-        // Add event listeners for cancel all pair buttons
-        document.querySelectorAll('.cancel-all-pair').forEach(button => {
-            button.addEventListener('click', function() {
-                const pair = this.getAttribute('data-pair');
-                const orderIds = JSON.parse(this.getAttribute('data-order-ids'));
-                cancelAllOfPair(pair, orderIds);
-            });
-        });
-        document.querySelectorAll('.order-id-button').forEach(button => {
-            button.addEventListener('click', function() {
-                const id = this.getAttribute('data-order-id');
-                copyOrderId(id);
-                this.blur();
-            });
-        });
+        openOrdersData = sortedOrders;
+        const pairList = sortedOrders.map(([, order]) => order.descr.pair);
+        updatePairFilterOptions(pairList);
+        renderOpenOrdersTable();
     } catch (error) {
-        document.getElementById('openOrdersTable').innerHTML = 
-            `<tr><td colspan="10" class="text-center text-danger">Error loading orders: ${error.message}</td></tr>`;
+        openOrdersData = [];
+        updatePairFilterOptions([]);
+        renderOpenOrdersTable({ customMessage: `Error loading orders: ${error.message}`, messageClass: 'text-danger' });
     }
 }
 
@@ -318,17 +387,13 @@ async function cancelOrder(txid, rowElement) {
             return;
         }
 
-        rowElement.remove();
-        const tbody = document.getElementById('openOrdersTable');
-        const remainingOrders = tbody.querySelectorAll('tr:not([colspan])').length;
-        const orderCountSpan = document.getElementById('openOrdersCount');
-        
-        if (remainingOrders === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center">No open orders</td></tr>';
-            orderCountSpan.textContent = '0 ';
-        } else {
-            orderCountSpan.textContent = `${remainingOrders} `;
+        if (rowElement && typeof rowElement.remove === 'function') {
+            rowElement.remove();
         }
+        openOrdersData = openOrdersData.filter(([id]) => id !== txid);
+        const pairList = openOrdersData.map(([, order]) => order.descr.pair);
+        updatePairFilterOptions(pairList);
+        renderOpenOrdersTable();
     } catch (error) {
         errorDiv.textContent = 'Error canceling order: ' + error.message;
         errorDiv.classList.remove('is-hidden');
@@ -360,8 +425,9 @@ async function cancelAllOrders() {
         errorDiv.classList.remove('is-hidden');
 
         if (!result.pending) {
-            const tbody = document.getElementById('openOrdersTable');
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center">No open orders</td></tr>';
+            openOrdersData = [];
+            updatePairFilterOptions([]);
+            renderOpenOrdersTable();
         } else {
             const cancelButtons = document.querySelectorAll('#openOrdersTable button.btn-outline-danger');
             cancelButtons.forEach(btn => {
@@ -402,23 +468,10 @@ async function cancelAllOfPair(pair, orderIds) {
         errorDiv.textContent = `Successfully canceled ${result.count || orderIds.length} ${pair} orders`;
         errorDiv.classList.remove('is-hidden');
 
-        // Remove the canceled orders from the table
-        orderIds.forEach(orderId => {
-            const row = document.getElementById(`order-${orderId}`);
-            if (row) row.remove();
-        });
-
-        // Update order count
-        const tbody = document.getElementById('openOrdersTable');
-        const remainingOrders = tbody.querySelectorAll('tr:not([colspan])').length;
-        const orderCountSpan = document.getElementById('openOrdersCount');
-        
-        if (remainingOrders === 0) {
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center">No open orders</td></tr>';
-            orderCountSpan.textContent = '0 ';
-        } else {
-            orderCountSpan.textContent = `${remainingOrders} `;
-        }
+        openOrdersData = openOrdersData.filter(([id]) => !orderIds.includes(id));
+        const pairList = openOrdersData.map(([, order]) => order.descr.pair);
+        updatePairFilterOptions(pairList);
+        renderOpenOrdersTable();
     } catch (error) {
         errorDiv.className = 'alert alert-danger mt-3';
         errorDiv.textContent = `Error canceling ${pair} orders: ` + error.message;
@@ -681,6 +734,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('open-tab').addEventListener('click', fetchOpenOrders);
     document.getElementById('refreshOrders').addEventListener('click', fetchOpenOrders);
+    const pairFilter = document.getElementById('openOrdersPairFilter');
+    if (pairFilter) {
+        pairFilter.addEventListener('change', () => renderOpenOrdersTable());
+    }
     document.getElementById('cancelAll').addEventListener('click', cancelAllOrders);
     document.getElementById('asset').addEventListener('change', function() {
         const pairInfo = getPairInfo(this.value);
