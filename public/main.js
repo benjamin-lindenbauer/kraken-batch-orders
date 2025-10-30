@@ -149,7 +149,7 @@ async function fetchOpenOrders() {
     const orderCountSpan = document.getElementById('openOrdersCount');
     errorDiv.style.display = 'none';
     
-    tbody.innerHTML = '<tr><td colspan="6" class="text-center">Loading orders...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading orders...</td></tr>';
     orderCountSpan.textContent = '';
     
     try {
@@ -163,7 +163,7 @@ async function fetchOpenOrders() {
         const result = await response.json();
         
         if (result.error && result.error.length > 0) {
-            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">${result.error.join(', ')}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">${result.error.join(', ')}</td></tr>`;
             orderCountSpan.textContent = '0 ';
             return;
         }
@@ -173,7 +173,7 @@ async function fetchOpenOrders() {
         orderCountSpan.textContent = `${orderCount} `;
 
         if (orderCount === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No open orders</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No open orders</td></tr>';
             return;
         }
 
@@ -234,7 +234,7 @@ async function fetchOpenOrders() {
         });
     } catch (error) {
         document.getElementById('openOrdersTable').innerHTML = 
-            `<tr><td colspan="6" class="text-center text-danger">Error loading orders: ${error.message}</td></tr>`;
+            `<tr><td colspan="7" class="text-center text-danger">Error loading orders: ${error.message}</td></tr>`;
     }
 }
 
@@ -265,7 +265,7 @@ async function cancelOrder(txid, rowElement) {
         const orderCountSpan = document.getElementById('openOrdersCount');
         
         if (remainingOrders === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No open orders</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No open orders</td></tr>';
             orderCountSpan.textContent = '0 ';
         } else {
             orderCountSpan.textContent = `${remainingOrders} `;
@@ -302,7 +302,7 @@ async function cancelAllOrders() {
 
         if (!result.pending) {
             const tbody = document.getElementById('openOrdersTable');
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No open orders</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No open orders</td></tr>';
         } else {
             const cancelButtons = document.querySelectorAll('#openOrdersTable button');
             cancelButtons.forEach(btn => {
@@ -355,7 +355,7 @@ async function cancelAllOfPair(pair, orderIds) {
         const orderCountSpan = document.getElementById('openOrdersCount');
         
         if (remainingOrders === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center">No open orders</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center">No open orders</td></tr>';
             orderCountSpan.textContent = '0 ';
         } else {
             orderCountSpan.textContent = `${remainingOrders} `;
