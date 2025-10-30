@@ -147,7 +147,7 @@ async function fetchOpenOrders() {
     const tbody = document.getElementById('openOrdersTable');
     const errorDiv = document.getElementById('orderError');
     const orderCountSpan = document.getElementById('openOrdersCount');
-    errorDiv.style.display = 'none';
+    errorDiv.classList.add('is-hidden');
     
     tbody.innerHTML = '<tr><td colspan="7" class="text-center">Loading orders...</td></tr>';
     orderCountSpan.textContent = '';
@@ -240,7 +240,7 @@ async function fetchOpenOrders() {
 
 async function cancelOrder(txid, rowElement) {
     const errorDiv = document.getElementById('orderError');
-    errorDiv.style.display = 'none';
+    errorDiv.classList.add('is-hidden');
     
     try {
         const response = await fetch('/api/cancel-order', {
@@ -255,7 +255,7 @@ async function cancelOrder(txid, rowElement) {
         
         if (result.error && result.error.length > 0) {
             errorDiv.textContent = 'Error canceling order: ' + result.error.join(', ');
-            errorDiv.style.display = 'block';
+            errorDiv.classList.remove('is-hidden');
             return;
         }
 
@@ -272,13 +272,13 @@ async function cancelOrder(txid, rowElement) {
         }
     } catch (error) {
         errorDiv.textContent = 'Error canceling order: ' + error.message;
-        errorDiv.style.display = 'block';
+        errorDiv.classList.remove('is-hidden');
     }
 }
 
 async function cancelAllOrders() {
     const errorDiv = document.getElementById('orderError');
-    errorDiv.style.display = 'none';
+    errorDiv.classList.add('is-hidden');
     
     try {
         const response = await fetch('/api/cancel-all', {
@@ -292,13 +292,13 @@ async function cancelAllOrders() {
         
         if (result.error && result.error.length > 0) {
             errorDiv.textContent = 'Error canceling all orders: ' + result.error.join(', ');
-            errorDiv.style.display = 'block';
+            errorDiv.classList.remove('is-hidden');
             return;
         }
 
         errorDiv.className = 'alert alert-success mt-3';
         errorDiv.textContent = `Successfully canceled ${result.count} orders${result.pending ? ' (pending)' : ''}`;
-        errorDiv.style.display = 'block';
+        errorDiv.classList.remove('is-hidden');
 
         if (!result.pending) {
             const tbody = document.getElementById('openOrdersTable');
@@ -313,13 +313,13 @@ async function cancelAllOrders() {
     } catch (error) {
         errorDiv.className = 'alert alert-danger mt-3';
         errorDiv.textContent = 'Error canceling all orders: ' + error.message;
-        errorDiv.style.display = 'block';
+        errorDiv.classList.remove('is-hidden');
     }
 }
 
 async function cancelAllOfPair(pair, orderIds) {
     const errorDiv = document.getElementById('orderError');
-    errorDiv.style.display = 'none';
+    errorDiv.classList.add('is-hidden');
     
     try {
         const response = await fetch('/api/cancel-all-of-pair', {
@@ -335,13 +335,13 @@ async function cancelAllOfPair(pair, orderIds) {
         if (result.error && result.error.length > 0) {
             errorDiv.className = 'alert alert-danger mt-3';
             errorDiv.textContent = `Error canceling ${pair} orders: ` + result.error.join(', ');
-            errorDiv.style.display = 'block';
+            errorDiv.classList.remove('is-hidden');
             return;
         }
 
         errorDiv.className = 'alert alert-success mt-3';
         errorDiv.textContent = `Successfully canceled ${result.count || orderIds.length} ${pair} orders`;
-        errorDiv.style.display = 'block';
+        errorDiv.classList.remove('is-hidden');
 
         // Remove the canceled orders from the table
         orderIds.forEach(orderId => {
@@ -363,7 +363,7 @@ async function cancelAllOfPair(pair, orderIds) {
     } catch (error) {
         errorDiv.className = 'alert alert-danger mt-3';
         errorDiv.textContent = `Error canceling ${pair} orders: ` + error.message;
-        errorDiv.style.display = 'block';
+        errorDiv.classList.remove('is-hidden');
     }
 }
 
@@ -516,7 +516,7 @@ async function createOrders(event) {
                 order.error ? `<div class="text-danger">${order.error}</div>` :
                 `<div>${order.descr.order}</div>`
             ).join('') : '';
-            orderDetails.style.display = 'block';
+            orderDetails.classList.remove('is-hidden');
         }
     } catch (error) {
         document.getElementById('result').innerHTML = `<div class="alert alert-danger">Error: ${error.message}</div>`;
