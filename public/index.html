@@ -12,14 +12,32 @@
     <body>
         <div class="container app-container">
             <div class="d-flex justify-content-between align-items-start mb-2 app-header">
-                <h1>Kraken Batch Trading</h1>
-                <div class="balance-display text-end">
-                    <div id="balanceDisplay">
-                        <div class="spinner-border spinner-border-sm" role="status">
-                            <span class="visually-hidden">Loading balances...</span>
+                <h1 class="app-title">Kraken Batch Trading</h1>
+                <div class="header-actions">
+                    <div class="balance-display text-end">
+                        <div id="balanceDisplay">
+                            <div class="spinner-border spinner-border-sm" role="status">
+                                <span class="visually-hidden">Loading balances...</span>
+                            </div>
                         </div>
+                        <div class="text-end" id="totalBalance"></div>
                     </div>
-                    <div class="text-end" id="totalBalance"></div>
+                    <button type="button" id="themeToggle" class="theme-toggle" aria-label="Toggle theme" aria-pressed="false" title="Toggle theme">
+                        <svg class="theme-icon sun-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <circle cx="12" cy="12" r="4"></circle>
+                            <path d="M12 3v2"></path>
+                            <path d="M12 19v2"></path>
+                            <path d="M5.22 5.22l1.42 1.42"></path>
+                            <path d="M17.36 17.36l1.42 1.42"></path>
+                            <path d="M3 12h2"></path>
+                            <path d="M19 12h2"></path>
+                            <path d="M5.22 18.78l1.42-1.42"></path>
+                            <path d="M17.36 6.64l1.42-1.42"></path>
+                        </svg>
+                        <svg class="theme-icon moon-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"></path>
+                        </svg>
+                    </button>
                 </div>
             </div>
             
@@ -239,12 +257,12 @@
                                     <th>Pair</th>
                                     <th>Type</th>
                                     <th>Order Type</th>
-                                    <th>Volume</th>
-                                    <th>Closed</th>
-                                    <th>Cost</th>
-                                    <th>Margin</th>
-                                    <th>Value</th>
-                                    <th>Net</th>
+                                    <th class="numeric">Volume</th>
+                                    <th class="numeric">Closed</th>
+                                    <th class="numeric">Cost</th>
+                                    <th class="numeric">Margin</th>
+                                    <th class="numeric">Value</th>
+                                    <th class="numeric">Net</th>
                                     <th>Opened</th>
                                     <th>Status</th>
                                 </tr>

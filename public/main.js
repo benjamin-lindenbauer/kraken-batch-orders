@@ -1,12 +1,86 @@
 ﻿let orders = [];
 let openOrdersData = [];
 const openPositionsBody = document.getElementById('openPositionsTable');
+const themeToggleButton = document.getElementById('themeToggle');
+const THEME_STORAGE_KEY = 'kraken-theme-preference';
 
+let activeTheme = 'light';
+let hasStoredThemePreference = false;
+
+function getStoredTheme() {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    return stored === 'dark' || stored === 'light' ? stored : null;
+  } catch (_error) {
+    return null;
+  }
+}
+
+function persistTheme(theme) {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, theme);
+  } catch (_error) {
+    // Ignore persistence errors (e.g. private mode)
+  }
+}
+
+function setToggleState(theme) {
+  if (!themeToggleButton) return;
+  const isDark = theme === 'dark';
+  themeToggleButton.setAttribute('aria-pressed', isDark ? 'true' : 'false');
+  themeToggleButton.setAttribute('title', isDark ? 'Switch to light theme' : 'Switch to dark theme');
+  themeToggleButton.setAttribute('aria-label', isDark ? 'Switch to light theme' : 'Switch to dark theme');
+}
+
+function applyTheme(theme) {
+  activeTheme = theme === 'dark' ? 'dark' : 'light';
+  document.documentElement.setAttribute('data-theme', activeTheme);
+  if (document.body) {
+    document.body.classList.toggle('theme-dark', activeTheme === 'dark');
+  }
+  const themeColorMeta = document.querySelector('meta[name="theme-color"]');
+  if (themeColorMeta) {
+    themeColorMeta.setAttribute('content', activeTheme === 'dark' ? '#0f172a' : '#f5f6fa');
+  }
+  setToggleState(activeTheme);
+}
+
+const storedTheme = getStoredTheme();
+hasStoredThemePreference = storedTheme !== null;
+
+const prefersDarkMedia = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
+const initialTheme =
+  storedTheme ??
+  (prefersDarkMedia && typeof prefersDarkMedia.matches === 'boolean' && prefersDarkMedia.matches ? 'dark' : 'light');
+
+applyTheme(initialTheme);
+
+if (prefersDarkMedia) {
+  const handleSystemThemeChange = (event) => {
+    if (hasStoredThemePreference) return;
+    applyTheme(event.matches ? 'dark' : 'light');
+  };
+
+  if (typeof prefersDarkMedia.addEventListener === 'function') {
+    prefersDarkMedia.addEventListener('change', handleSystemThemeChange);
+  } else if (typeof prefersDarkMedia.addListener === 'function') {
+    prefersDarkMedia.addListener(handleSystemThemeChange);
+  }
+}
+
+if (themeToggleButton) {
+  themeToggleButton.addEventListener('click', () => {
+    const nextTheme = activeTheme === 'dark' ? 'light' : 'dark';
+    applyTheme(nextTheme);
+    persistTheme(nextTheme);
+    hasStoredThemePreference = true;
+  });
+}
 function renderEmptyRow() {
   if (!openPositionsBody) return
   openPositionsBody.innerHTML = `
     <tr>
-      <td colspan="11" class="table-placeholder">No open positions available.</td>
+      <td colspan="13" class="table-placeholder">No open positions available.</td>
     </tr>
   `
 }
@@ -15,7 +89,7 @@ function renderErrorRow(message) {
   if (!openPositionsBody) return
   openPositionsBody.innerHTML = `
     <tr>
-      <td colspan="11" class="table-placeholder">Failed to load open positions: ${escapeHtml(message)}</td>
+      <td colspan="13" class="table-placeholder">Failed to load open positions: ${escapeHtml(message)}</td>
     </tr>
   `
 }
@@ -24,7 +98,7 @@ function renderLoadingRow() {
   if (!openPositionsBody) return
   openPositionsBody.innerHTML = `
     <tr>
-      <td colspan="11" class="table-placeholder">Loading open positions...</td>
+      <td colspan="13" class="table-placeholder">Loading open positions...</td>
     </tr>
   `
 }
@@ -904,3 +978,5 @@ document.addEventListener(
   },
   true
 );
+
+
