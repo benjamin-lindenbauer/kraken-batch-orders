@@ -1,11 +1,12 @@
-let orders = [];
+﻿let orders = [];
 let openOrdersData = [];
+const openPositionsBody = document.getElementById('openPositionsTable');
 
 function renderEmptyRow() {
   if (!openPositionsBody) return
   openPositionsBody.innerHTML = `
     <tr>
-      <td colspan="13" class="table-placeholder">No open positions available.</td>
+      <td colspan="11" class="table-placeholder">No open positions available.</td>
     </tr>
   `
 }
@@ -14,7 +15,16 @@ function renderErrorRow(message) {
   if (!openPositionsBody) return
   openPositionsBody.innerHTML = `
     <tr>
-      <td colspan="13" class="table-placeholder">Failed to load open positions: ${escapeHtml(message)}</td>
+      <td colspan="11" class="table-placeholder">Failed to load open positions: ${escapeHtml(message)}</td>
+    </tr>
+  `
+}
+
+function renderLoadingRow() {
+  if (!openPositionsBody) return
+  openPositionsBody.innerHTML = `
+    <tr>
+      <td colspan="11" class="table-placeholder">Loading open positions...</td>
     </tr>
   `
 }
@@ -31,8 +41,6 @@ function renderPositions(positions) {
       const opened = formatTimestamp(position.openedAt)
       return `
         <tr>
-          <td>${escapeHtml(position.id)}</td>
-          <td>${escapeHtml(position.orderId)}</td>
           <td>${escapeHtml(position.pair)}</td>
           <td>${escapeHtml(position.type)}</td>
           <td>${escapeHtml(position.orderType)}</td>
@@ -40,8 +48,8 @@ function renderPositions(positions) {
           <td class="numeric">${formatNumeric(position.volumeClosed)}</td>
           <td class="numeric">${formatNumeric(position.cost)}</td>
           <td class="numeric">${formatNumeric(position.margin)}</td>
-          <td class="numeric">${position.value !== null ? formatNumeric(position.value) : '—'}</td>
-          <td class="numeric">${position.net !== null ? formatNumeric(position.net) : '—'}</td>
+          <td class="numeric">${position.value !== null ? formatNumeric(position.value) : '--'}</td>
+          <td class="numeric">${position.net !== null ? formatNumeric(position.net) : '--'}</td>
           <td>${opened}</td>
           <td>${escapeHtml(position.status)}</td>
         </tr>
@@ -77,7 +85,7 @@ async function fetchOpenPositions() {
 
 function formatNumeric(value) {
   const number = Number(value)
-  if (Number.isNaN(number)) return escapeHtml(String(value ?? '—'))
+  if (Number.isNaN(number)) return escapeHtml(String(value ?? '--'))
   return number.toLocaleString(undefined, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 8,
@@ -85,9 +93,9 @@ function formatNumeric(value) {
 }
 
 function formatTimestamp(value) {
-  if (!value) return '—'
+  if (!value) return '--'
   const numeric = Number(value)
-  if (!Number.isFinite(numeric) || numeric <= 0) return '—'
+  if (!Number.isFinite(numeric) || numeric <= 0) return '--'
   const date = new Date(numeric * 1000)
   return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`
 }
@@ -834,6 +842,10 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('open-orders-tab').addEventListener('click', fetchOpenOrders);
     document.getElementById('open-positions-tab').addEventListener('click', fetchOpenPositions);
     document.getElementById('refreshOrders').addEventListener('click', fetchOpenOrders);
+    const refreshPositionsButton = document.getElementById('refreshPositions');
+    if (refreshPositionsButton) {
+        refreshPositionsButton.addEventListener('click', fetchOpenPositions);
+    }
     const pairFilter = document.getElementById('openOrdersPairFilter');
     if (pairFilter) {
         pairFilter.addEventListener('change', () => renderOpenOrdersTable());
@@ -868,6 +880,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize asset options
     populateAssetOptions();
+    fetchOpenPositions();
 
     // Start balance updates
     updateBalances().then(() => {

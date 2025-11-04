@@ -486,7 +486,7 @@ router.get('/api/open-positions', async (req, res) => {
         const nonce = generateNonce();
         const searchParams = new URLSearchParams({ nonce });
 
-        const { txid, docalcs, consolidation, rebase_multiplier: rebaseMultiplier } = req.query;
+        const { txid } = req.query;
 
         if (txid) {
             const txidValue = Array.isArray(txid) ? txid.join(',') : String(txid);
@@ -495,25 +495,7 @@ router.get('/api/open-positions', async (req, res) => {
             }
         }
 
-        const docalcsValue = parseBooleanQuery(docalcs);
-        if (docalcsValue !== undefined) {
-            searchParams.append('docalcs', docalcsValue ? 'true' : 'false');
-        }
-
-        if (consolidation) {
-            const consolidationValue = Array.isArray(consolidation) ? consolidation.at(-1) : consolidation;
-            if (consolidationValue) {
-                searchParams.append('consolidation', String(consolidationValue));
-            }
-        }
-
-        if (rebaseMultiplier) {
-            const rebaseValue = Array.isArray(rebaseMultiplier) ? rebaseMultiplier.at(-1) : rebaseMultiplier;
-            if (rebaseValue) {
-                searchParams.append('rebase_multiplier', String(rebaseValue));
-            }
-        }
-
+        searchParams.append('consolidation', 'market');
         const body = searchParams.toString();
         const signature = getMessageSignature(path, body, apiSecret, nonce);
 

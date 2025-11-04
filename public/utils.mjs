@@ -1,4 +1,4 @@
-// Utility functions for Kraken batch orders
+// Utility functions for Kraken batch trading
 
 export const TRADING_PAIRS = {
     'BTC/USD': {

@@ -1,4 +1,4 @@
-# Kraken Batch Orders
+# Kraken Batch Trading
 
 A web application for creating and managing batch orders on Kraken (spot/margin). Efficiently create multiple orders with geometric price and volume progression, preview order details in real time, and manage your open positions.
 
