@@ -1,7 +1,106 @@
 let orders = [];
 let openOrdersData = [];
 
-// Functions
+function renderEmptyRow() {
+  if (!openPositionsBody) return
+  openPositionsBody.innerHTML = `
+    <tr>
+      <td colspan="13" class="table-placeholder">No open positions available.</td>
+    </tr>
+  `
+}
+
+function renderErrorRow(message) {
+  if (!openPositionsBody) return
+  openPositionsBody.innerHTML = `
+    <tr>
+      <td colspan="13" class="table-placeholder">Failed to load open positions: ${escapeHtml(message)}</td>
+    </tr>
+  `
+}
+
+function renderPositions(positions) {
+  if (!openPositionsBody) return
+  if (!Array.isArray(positions) || positions.length === 0) {
+    renderEmptyRow()
+    return
+  }
+
+  const rows = positions
+    .map((position) => {
+      const opened = formatTimestamp(position.openedAt)
+      return `
+        <tr>
+          <td>${escapeHtml(position.id)}</td>
+          <td>${escapeHtml(position.orderId)}</td>
+          <td>${escapeHtml(position.pair)}</td>
+          <td>${escapeHtml(position.type)}</td>
+          <td>${escapeHtml(position.orderType)}</td>
+          <td class="numeric">${formatNumeric(position.volume)}</td>
+          <td class="numeric">${formatNumeric(position.volumeClosed)}</td>
+          <td class="numeric">${formatNumeric(position.cost)}</td>
+          <td class="numeric">${formatNumeric(position.margin)}</td>
+          <td class="numeric">${position.value !== null ? formatNumeric(position.value) : '—'}</td>
+          <td class="numeric">${position.net !== null ? formatNumeric(position.net) : '—'}</td>
+          <td>${opened}</td>
+          <td>${escapeHtml(position.status)}</td>
+        </tr>
+      `
+    })
+    .join('')
+
+  openPositionsBody.innerHTML = rows
+}
+
+async function fetchOpenPositions() {
+  if (!openPositionsBody) return
+
+  renderLoadingRow()
+
+  try {
+    const response = await fetch('/api/open-positions')
+    if (!response.ok) {
+      throw new Error(`Server responded with status ${response.status}`)
+    }
+
+    const payload = await response.json()
+    if (payload.error) {
+      throw new Error(payload.error)
+    }
+
+    renderPositions(payload.positions ?? [])
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    renderErrorRow(message)
+  }
+}
+
+function formatNumeric(value) {
+  const number = Number(value)
+  if (Number.isNaN(number)) return escapeHtml(String(value ?? '—'))
+  return number.toLocaleString(undefined, {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 8,
+  })
+}
+
+function formatTimestamp(value) {
+  if (!value) return '—'
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric) || numeric <= 0) return '—'
+  const date = new Date(numeric * 1000)
+  return `${date.toLocaleDateString()} ${date.toLocaleTimeString()}`
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
 function copyOrderId(orderId) {
     if (!orderId) return;
 
@@ -732,7 +831,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const createButton = document.getElementById('createButton');
         createButton.textContent = `Create ${this.value} Orders`;
     });
-    document.getElementById('open-tab').addEventListener('click', fetchOpenOrders);
+    document.getElementById('open-orders-tab').addEventListener('click', fetchOpenOrders);
+    document.getElementById('open-positions-tab').addEventListener('click', fetchOpenPositions);
     document.getElementById('refreshOrders').addEventListener('click', fetchOpenOrders);
     const pairFilter = document.getElementById('openOrdersPairFilter');
     if (pairFilter) {
@@ -775,6 +875,7 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(updateStartPrice, 100);
     });
 });
+
 // Intercept cancel actions to confirm with the user before proceeding.
 // This uses a capturing listener so it runs before any existing handlers.
 document.addEventListener(

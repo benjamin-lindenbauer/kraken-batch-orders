@@ -1,239 +1,242 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kraken Batch Orders</title>
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <meta name="theme-color" content="#000000">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <div class="container app-container">
-        <div class="d-flex justify-content-between align-items-start mb-2 app-header">
-            <h2 class="mb-0 app-title" onclick="window.location.reload()">Kraken Batch Orders</h2>
-            <div class="balance-display text-end">
-                <div id="balanceDisplay">
-                    <div class="spinner-border spinner-border-sm" role="status">
-                        <span class="visually-hidden">Loading balances...</span>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Kraken Batch Orders</title>
+        <link rel="icon" type="image/svg+xml" href="favicon.svg">
+        <meta name="theme-color" content="#000000">
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        <link rel="stylesheet" href="styles.css">
+    </head>
+    <body>
+        <div class="container app-container">
+            <div class="d-flex justify-content-between align-items-start mb-2 app-header">
+                <h2 class="mb-0 app-title" onclick="window.location.reload()">Kraken Batch Orders</h2>
+                <div class="balance-display text-end">
+                    <div id="balanceDisplay">
+                        <div class="spinner-border spinner-border-sm" role="status">
+                            <span class="visually-hidden">Loading balances...</span>
+                        </div>
                     </div>
+                    <div class="text-end" id="totalBalance"></div>
                 </div>
-                <div class="text-end" id="totalBalance"></div>
             </div>
-        </div>
-        
-        <ul class="nav nav-tabs mb-3" id="orderTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="create-tab" data-bs-toggle="tab" data-bs-target="#create" type="button" role="tab">Create Orders</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="open-tab" data-bs-toggle="tab" data-bs-target="#open" type="button" role="tab">Open Orders</button>
-            </li>
-        </ul>
+            
+            <ul class="nav nav-tabs mb-3" id="orderTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="create-tab" data-bs-toggle="tab" data-bs-target="#create" type="button" role="tab">Create Orders</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="open-orders-tab" data-bs-toggle="tab" data-bs-target="#open" type="button" role="tab">Open Orders</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="open-positions-tab" data-bs-toggle="tab" data-bs-target="#open-pos" type="button" role="tab">Open Positions</button>
+                </li>
+            </ul>
 
-        <div class="tab-content" id="orderTabsContent">
-            <div class="tab-pane fade show active" id="create" role="tabpanel">
-                <div id="orderForm" class="mb-2">
-                    <div class="card">
-                        <div class="card-header d-flex justify-content-between align-items-center">
-                            <h5 class="mb-0">Batch order creation</h5>
-                            <button id="createButton" class="btn btn-primary">Create 15 Orders</button>
-                        </div>
-                        <div class="card-body">
-                            <!-- Row 1: Trading pair and current price -->
-                            <div class="row align-items-center mb-3">
-                                <div class="col-4">
-                                    <div class="input-group">
-                                        <span class="input-group-text">Trading Pair</span>
-                                        <select class="form-select" id="asset" required></select>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="input-group">
-                                        <span class="input-group-text">Current Price</span>
-                                        <div class="form-control" id="currentPrice"></div>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="input-group">
-                                        <span class="input-group-text">Spot/Margin</span>
-                                        <select class="form-select" id="leverage" required>
-                                            <option value="spot">Spot</option>
-                                            <option value="2">2x Leverage</option>
-                                            <option value="3">3x Leverage</option>
-                                            <option value="4">4x Leverage</option>
-                                            <option value="5">5x Leverage</option>
-                                        </select>
-                                    </div>
-                                </div>
+            <div class="tab-content" id="orderTabsContent">
+                <div class="tab-pane fade show active" id="create" role="tabpanel">
+                    <div id="orderForm" class="mb-2">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h5 class="mb-0">Batch order creation</h5>
+                                <button id="createButton" class="btn btn-primary">Create 15 Orders</button>
                             </div>
-
-                            <!-- Row 2: Direction, Amount of Orders, Total Amount -->
-                            <div class="row align-items-center mb-3">
-                                <div class="col-4">
-                                    <div class="input-group">
-                                        <span class="input-group-text">Direction</span>
-                                        <select class="form-select" id="direction" required>
-                                            <option selected value="buy">Buy</option>
-                                            <option value="sell">Sell</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="input-group">
-                                        <span class="input-group-text">Number of Orders</span>
-                                        <input type="number" class="form-control" id="numOrders" value="15" min="1" max="30" required>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="input-group">
-                                        <span class="input-group-text">Price Offset %</span>
-                                        <input type="number" class="form-control" id="priceOffset" value="2.5" min="0.0" max="20.0" step="0.1" required>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Row 3: Price of First Order, Price Distance, Volume Increase -->
-                            <div class="row align-items-center mb-3">
-                                <div class="col-4">
-                                    <div class="input-group">
-                                        <span class="input-group-text">First Order Price</span>
-                                        <input type="number" class="form-control" id="start_price" value="80000.0" step="0.1" required>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="input-group">
-                                        <span class="input-group-text">Order Price Distance %</span>
-                                        <input type="number" class="form-control" id="distance" step="0.05" value="1.0" min="0.1" max="10.0" required>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="input-group">
-                                        <span class="input-group-text">Volume Increase %</span>
-                                        <input type="number" class="form-control" id="volume_distance" step="0.5" value="10" min="1" max="30" required>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Row 4: Stop Loss, Take Profit -->
-                            <div class="row align-items-center">
-                                <div class="col-4">
-                                    <div class="input-group">
-                                        <span class="input-group-text" id="leverageText">Total Order Volume $</span>
-                                        <input type="number" class="form-control" id="total" step="100" value="50000" min="100" required>
-                                    </div>
-                                </div>
-                                <div class="col-4">
-                                    <div class="input-group">
-                                        <div class="input-group-text">
-                                            <input class="form-check-input mt-0" type="checkbox" id="enableStopLoss">
+                            <div class="card-body">
+                                <!-- Row 1: Trading pair and current price -->
+                                <div class="row align-items-center mb-3">
+                                    <div class="col-4">
+                                        <div class="input-group">
+                                            <span class="input-group-text">Trading Pair</span>
+                                            <select class="form-select" id="asset" required></select>
                                         </div>
-                                        <span class="input-group-text">Stop Loss %</span>
-                                        <input type="number" class="form-control" id="stop_loss" value="2.5" min="0.0" max="20.0" step="0.5" disabled>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="input-group">
+                                            <span class="input-group-text">Current Price</span>
+                                            <div class="form-control" id="currentPrice"></div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="input-group">
+                                            <span class="input-group-text">Spot/Margin</span>
+                                            <select class="form-select" id="leverage" required>
+                                                <option value="spot">Spot</option>
+                                                <option value="2">2x Leverage</option>
+                                                <option value="3">3x Leverage</option>
+                                                <option value="4">4x Leverage</option>
+                                                <option value="5">5x Leverage</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
-                                <div class="col-4">
-                                    <div class="input-group">
-                                        <div class="input-group-text">
-                                            <input class="form-check-input mt-0" type="checkbox" id="enableTakeProfit" checked>
+
+                                <!-- Row 2: Direction, Amount of Orders, Total Amount -->
+                                <div class="row align-items-center mb-3">
+                                    <div class="col-4">
+                                        <div class="input-group">
+                                            <span class="input-group-text">Direction</span>
+                                            <select class="form-select" id="direction" required>
+                                                <option selected value="buy">Buy</option>
+                                                <option value="sell">Sell</option>
+                                            </select>
                                         </div>
-                                        <span class="input-group-text">Take Profit %</span>
-                                        <input type="number" class="form-control" id="take_profit" value="5.0" min="0.0" max="20.0" step="0.5">
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="input-group">
+                                            <span class="input-group-text">Number of Orders</span>
+                                            <input type="number" class="form-control" id="numOrders" value="15" min="1" max="30" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="input-group">
+                                            <span class="input-group-text">Price Offset %</span>
+                                            <input type="number" class="form-control" id="priceOffset" value="2.5" min="0.0" max="20.0" step="0.1" required>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Row 3: Price of First Order, Price Distance, Volume Increase -->
+                                <div class="row align-items-center mb-3">
+                                    <div class="col-4">
+                                        <div class="input-group">
+                                            <span class="input-group-text">First Order Price</span>
+                                            <input type="number" class="form-control" id="start_price" value="80000.0" step="0.1" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="input-group">
+                                            <span class="input-group-text">Order Price Distance %</span>
+                                            <input type="number" class="form-control" id="distance" step="0.05" value="1.0" min="0.1" max="10.0" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="input-group">
+                                            <span class="input-group-text">Volume Increase %</span>
+                                            <input type="number" class="form-control" id="volume_distance" step="0.5" value="10" min="1" max="30" required>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Row 4: Stop Loss, Take Profit -->
+                                <div class="row align-items-center">
+                                    <div class="col-4">
+                                        <div class="input-group">
+                                            <span class="input-group-text" id="leverageText">Total Order Volume $</span>
+                                            <input type="number" class="form-control" id="total" step="100" value="50000" min="100" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="input-group">
+                                            <div class="input-group-text">
+                                                <input class="form-check-input mt-0" type="checkbox" id="enableStopLoss">
+                                            </div>
+                                            <span class="input-group-text">Stop Loss %</span>
+                                            <input type="number" class="form-control" id="stop_loss" value="2.5" min="0.0" max="20.0" step="0.5" disabled>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="input-group">
+                                            <div class="input-group-text">
+                                                <input class="form-check-input mt-0" type="checkbox" id="enableTakeProfit" checked>
+                                            </div>
+                                            <span class="input-group-text">Take Profit %</span>
+                                            <input type="number" class="form-control" id="take_profit" value="5.0" min="0.0" max="20.0" step="0.5">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
+
+                    <div id="previewSection">
+                        <div class="table-responsive">
+                            <div id="previewTable"></div>
+                        </div>
+                    </div>
+
+                    <div id="pricePreviewContainer" class="insight-panel">
+                        <input type="range" id="priceSlider" min="0" max="50" step="0.5" value="0">
+                        <div class="insight-grid">
+                            <div class="insight-item">
+                                <strong>Preview Price</strong>
+                                <span id="previewPrice">-</span>
+                            </div>
+                            <div class="insight-item">
+                                <strong>Realized Loss</strong>
+                                <span id="realizedLoss">-</span>
+                            </div>
+                            <div class="insight-item">
+                                <strong>Unrealized Loss</strong>
+                                <span id="unrealizedLoss">-</span>
+                            </div>
+                            <div class="insight-item">
+                                <strong>Open Position Size</strong>
+                                <span id="positionSize">-</span>
+                            </div>
+                            <div class="insight-item">
+                                <strong>Closed Position Size</strong>
+                                <span id="closedPositionSize">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="result"></div>
+
+                    <div id="orderDetails" class="alert alert-success is-hidden">
+                        <h6>Created Orders:</h6>
+                        <div id="orderList"></div>
+                    </div>
                 </div>
 
-                <div id="previewSection">
+                <div class="tab-pane fade" id="open" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h6><span id="openOrdersCount"></span>Open Orders</h6>
+                        <div class="d-flex align-items-center">
+                            <select id="openOrdersPairFilter" class="form-select me-2" style="width: auto;" disabled>
+                                <option value="">All pairs</option>
+                            </select>
+                            <button id="cancelAll" class="btn btn-outline-danger btn-sm me-2">Cancel All</button>
+                            <button id="refreshOrders" class="btn btn-outline-primary btn-sm">Refresh</button>
+                        </div>
+                    </div>
                     <div class="table-responsive">
-                        <div id="previewTable"></div>
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Order ID</th>
+                                    <th>Pair</th>
+                                    <th>Type</th>
+                                    <th>Order Type</th>
+                                    <th>Leverage</th>
+                                    <th>Price</th>
+                                    <th>Volume</th>
+                                    <th>$ Value</th>
+                                    <th>Open Time</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody id="openOrdersTable">
+                                <tr>
+                                    <td colspan="10" class="text-center">Loading orders...</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
+                    <div id="orderError" class="alert alert-danger mt-3 is-hidden"></div>
                 </div>
-
-                <div id="pricePreviewContainer" class="insight-panel">
-                    <input type="range" id="priceSlider" min="0" max="50" step="0.5" value="0">
-                    <div class="insight-grid">
-                        <div class="insight-item">
-                            <strong>Preview Price</strong>
-                            <span id="previewPrice">-</span>
-                        </div>
-                        <div class="insight-item">
-                            <strong>Realized Loss</strong>
-                            <span id="realizedLoss">-</span>
-                        </div>
-                        <div class="insight-item">
-                            <strong>Unrealized Loss</strong>
-                            <span id="unrealizedLoss">-</span>
-                        </div>
-                        <div class="insight-item">
-                            <strong>Open Position Size</strong>
-                            <span id="positionSize">-</span>
-                        </div>
-                        <div class="insight-item">
-                            <strong>Closed Position Size</strong>
-                            <span id="closedPositionSize">-</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div id="result"></div>
-
-                <div id="orderDetails" class="alert alert-success is-hidden">
-                    <h6>Created Orders:</h6>
-                    <div id="orderList"></div>
-                </div>
-            </div>
-
-            <div class="tab-pane fade" id="open" role="tabpanel">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6><span id="openOrdersCount"></span>Open Orders</h6>
-                    <div class="d-flex align-items-center">
-                        <select id="openOrdersPairFilter" class="form-select me-2" style="width: auto;" disabled>
-                            <option value="">All pairs</option>
-                        </select>
-                        <button id="cancelAll" class="btn btn-outline-danger btn-sm me-2">Cancel All</button>
-                        <button id="refreshOrders" class="btn btn-outline-primary btn-sm">Refresh</button>
-                    </div>
-                </div>
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Order ID</th>
-                                <th>Pair</th>
-                                <th>Type</th>
-                                <th>Order Type</th>
-                                <th>Leverage</th>
-                                <th>Price</th>
-                                <th>Volume</th>
-                                <th>$ Value</th>
-                                <th>Open Time</th>
-                                <th>Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="openOrdersTable">
-                            <tr>
-                                <td colspan="10" class="text-center">Loading orders...</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-                <div id="orderError" class="alert alert-danger mt-3 is-hidden"></div>
             </div>
         </div>
-    </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <script type="module" src="utils.mjs"></script>
-    <script src="main.js"></script>
-    <footer class="text-center text-muted mt-4">
-        <small>
-            &copy; 2025 ben_zen ·
-            <a href="https://benzen.dev/" target="_blank" rel="noopener noreferrer">benzen.dev</a>
-        </small>
-    </footer>
-</body>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+        <script type="module" src="utils.mjs"></script>
+        <script src="main.js"></script>
+        <footer class="text-center text-muted mt-4">
+            <small>
+                &copy; 2025 ben_zen ·
+                <a href="https://benzen.dev/" target="_blank" rel="noopener noreferrer">benzen.dev</a>
+            </small>
+        </footer>
+    </body>
 </html>

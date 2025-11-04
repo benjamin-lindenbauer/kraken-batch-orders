@@ -47,6 +47,52 @@ function getMessageSignature(path, postData, secret, nonce) {
     return hmac_digest;
 }
 
+function parseBooleanQuery(value) {
+    if (Array.isArray(value)) {
+        value = value[value.length - 1];
+    }
+    if (typeof value === 'string') {
+        const normalised = value.trim().toLowerCase();
+        if (normalised === 'true' || normalised === '1') return true;
+        if (normalised === 'false' || normalised === '0') return false;
+        return undefined;
+    }
+    if (typeof value === 'number') {
+        return value === 1;
+    }
+    if (typeof value === 'boolean') {
+        return value;
+    }
+    return undefined;
+}
+
+function normaliseOpenPositions(result) {
+    if (!result || typeof result !== 'object') {
+        return [];
+    }
+
+    return Object.entries(result).map(([positionId, details]) => ({
+        id: positionId,
+        orderId: details?.ordertxid ?? '',
+        pair: details?.pair ?? '',
+        type: details?.type ?? '',
+        orderType: details?.ordertype ?? '',
+        volume: details?.vol ?? '0',
+        volumeClosed: details?.vol_closed ?? '0',
+        cost: details?.cost ?? '0',
+        margin: details?.margin ?? '0',
+        value: details?.value ?? null,
+        net: details?.net ?? null,
+        fee: details?.fee ?? '0',
+        openedAt: details?.time ?? 0,
+        status: details?.posstatus ?? '',
+        terms: details?.terms ?? null,
+        rolloverTime: details?.rollovertm ?? null,
+        misc: details?.misc ?? null,
+        flags: details?.oflags ?? null
+    }));
+}
+
 // Export the router for Netlify Functions
 const router = Router();
 
@@ -424,6 +470,82 @@ router.post('/api/trade-balance', async (req, res) => {
     } catch (error) {
         console.error('Error fetching trade balance:', error.response?.data || error.message);
         res.status(500).json({ error: [error.message] });
+    }
+});
+
+router.get('/api/open-positions', async (req, res) => {
+    try {
+        const apiKey = process.env.KRAKEN_API_KEY;
+        const apiSecret = process.env.KRAKEN_API_SECRET;
+
+        if (!apiKey || !apiSecret) {
+            return res.status(500).json({ error: ['Kraken API credentials are not configured'] });
+        }
+
+        const path = '/0/private/OpenPositions';
+        const nonce = generateNonce();
+        const searchParams = new URLSearchParams({ nonce });
+
+        const { txid, docalcs, consolidation, rebase_multiplier: rebaseMultiplier } = req.query;
+
+        if (txid) {
+            const txidValue = Array.isArray(txid) ? txid.join(',') : String(txid);
+            if (txidValue.trim() !== '') {
+                searchParams.append('txid', txidValue.trim());
+            }
+        }
+
+        const docalcsValue = parseBooleanQuery(docalcs);
+        if (docalcsValue !== undefined) {
+            searchParams.append('docalcs', docalcsValue ? 'true' : 'false');
+        }
+
+        if (consolidation) {
+            const consolidationValue = Array.isArray(consolidation) ? consolidation.at(-1) : consolidation;
+            if (consolidationValue) {
+                searchParams.append('consolidation', String(consolidationValue));
+            }
+        }
+
+        if (rebaseMultiplier) {
+            const rebaseValue = Array.isArray(rebaseMultiplier) ? rebaseMultiplier.at(-1) : rebaseMultiplier;
+            if (rebaseValue) {
+                searchParams.append('rebase_multiplier', String(rebaseValue));
+            }
+        }
+
+        const body = searchParams.toString();
+        const signature = getMessageSignature(path, body, apiSecret, nonce);
+
+        const response = await fetch(`https://api.kraken.com${path}`, {
+            method: 'POST',
+            headers: {
+                'API-Key': apiKey,
+                'API-Sign': signature,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok) {
+            console.error('Kraken OpenPositions request failed:', payload);
+            return res.status(response.status).json({ error: [`Kraken request failed with status ${response.status}`] });
+        }
+
+        if (Array.isArray(payload.error) && payload.error.length > 0) {
+            return res.status(400).json({ error: payload.error });
+        }
+
+        const result = payload.result ?? {};
+        res.json({
+            positions: normaliseOpenPositions(result),
+            raw: result
+        });
+    } catch (error) {
+        console.error('Error fetching open positions:', error);
+        res.status(500).json({ error: [error.message || 'Unhandled error fetching open positions'] });
     }
 });
 
