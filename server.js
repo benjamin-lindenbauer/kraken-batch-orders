@@ -97,7 +97,7 @@ function normaliseOpenPositions(result) {
 const router = Router();
 
 router.post('/api/batch-orders', async (req, res) => {
-    const { asset, price: startPrice, direction, numOrders, leverage, distance, volume_distance, total, stop_loss, take_profit } = req.body;
+    const { asset, price: startPrice, direction, numOrders, leverage, distance, volume_distance, total, stop_loss, take_profit, reduce_only } = req.body;
     
     try {
         const pairInfo = getPairInfo(asset);
@@ -132,7 +132,8 @@ router.post('/api/batch-orders', async (req, res) => {
                 type: direction,
                 volume: volume.toFixed(6 - priceDecimals),
                 pair: asset,
-                ...leverage > 1 && { leverage: pairInfo.leverage }
+                ...leverage > 1 && { leverage: pairInfo.leverage },
+                ...(reduce_only === true && { reduce_only: true })
             }
             if (stop_loss) order.close = {
                 ordertype: "stop-loss",
@@ -199,7 +200,7 @@ router.post('/api/batch-orders', async (req, res) => {
 });
 
 router.post('/api/add-order', async (req, res) => {
-    const { asset, price, direction, leverage, total, stop_loss, take_profit } = req.body;
+    const { asset, price, direction, leverage, total, stop_loss, take_profit, reduce_only } = req.body;
     
     try {
         const pairInfo = getPairInfo(asset);
@@ -223,7 +224,8 @@ router.post('/api/add-order', async (req, res) => {
             ...leverage > 1 && { leverage: leverage },
             ...stop_loss && { close: { ordertype: "stop-loss", price: (price / (1 + stop_loss / 100)).toFixed(priceDecimals) } },
             ...take_profit && { close: { ordertype: "take-profit", price: (price * (1 + take_profit / 100)).toFixed(priceDecimals) } },
-            deadline: new Date(Date.now() + 30000).toISOString() // 30 seconds from now
+            deadline: new Date(Date.now() + 30000).toISOString(), // 30 seconds from now
+            ...(reduce_only === true && { reduce_only: true })
         };
 
         const signature = getMessageSignature(path, JSON.stringify(requestData), process.env.KRAKEN_API_SECRET, nonce);

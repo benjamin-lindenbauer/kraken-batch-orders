@@ -76,6 +76,11 @@ if (themeToggleButton) {
     hasStoredThemePreference = true;
   });
 }
+
+function fixCurrencyNames(currency) {
+    return currency.replace('ZUSD', 'USD').replace('ZEUR', 'EUR').replace('XXBT', 'XBT').replace('XETH', 'ETH');
+}
+
 function renderEmptyRow() {
   if (!openPositionsBody) return
   openPositionsBody.innerHTML = `
@@ -115,7 +120,7 @@ function renderPositions(positions) {
       const opened = formatTimestamp(position.openedAt)
       return `
         <tr>
-          <td>${escapeHtml(position.pair)}</td>
+          <td>${escapeHtml(fixCurrencyNames(position.pair))}</td>
           <td>${escapeHtml(position.type)}</td>
           <td>${escapeHtml(position.orderType)}</td>
           <td class="numeric">${formatNumeric(position.volume)}</td>
@@ -729,7 +734,7 @@ async function updateBalances() {
         // Filter and sort balances
         const significantBalances = Object.entries(balances)
             .filter(([, amount]) => parseFloat(amount) > 0.001)
-            .map(([currency, amount]) => [currency.replace('ZUSD', 'USD').replace('ZEUR', 'EUR').replace('XXBT', 'XBT'), amount])
+            .map(([currency, amount]) => [fixCurrencyNames(currency), amount])
             .sort(([, a], [, b]) => parseFloat(b) - parseFloat(a));
 
         // Display top 3 balances
@@ -787,7 +792,8 @@ async function createOrders(event) {
         volume_distance: parseFloat(document.getElementById('volume_distance').value),
         total: parseFloat(document.getElementById('total').value),
         stop_loss: stopLossEnabled ? parseFloat(document.getElementById('stop_loss').value) : null,
-        take_profit: takeProfitEnabled ? parseFloat(document.getElementById('take_profit').value) : null
+        take_profit: takeProfitEnabled ? parseFloat(document.getElementById('take_profit').value) : null,
+        reduce_only: document.getElementById('reduceOnly') ? document.getElementById('reduceOnly').checked : false
     };
 
     try {

@@ -562,6 +562,28 @@ html[data-theme='dark'] footer {
   color: rgba(203, 213, 225, 0.72);
 }
 
+.info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  color: var(--accent);
+  font-weight: 600;
+  font-style: normal;
+  font-size: 0.8rem;
+  line-height: 1;
+  cursor: help;
+  user-select: none;
+}
+
+html[data-theme='dark'] .info-icon {
+  border-color: rgba(148, 163, 184, 0.45);
+  color: var(--accent);
+}
+
 @media (max-width: 768px) {
   .app-header {
     flex-direction: column;
