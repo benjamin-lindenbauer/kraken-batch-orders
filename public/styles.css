@@ -165,7 +165,7 @@ a:hover {
 
 .balance-display {
   display: grid;
-  gap: 6px;
+  gap: 0;
   font-size: 0.9rem;
   color: var(--text-secondary);
 }
