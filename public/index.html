@@ -51,6 +51,9 @@
                 <li class="nav-item" role="presentation">
                     <button class="nav-link" id="open-positions-tab" data-bs-toggle="tab" data-bs-target="#open-pos" type="button" role="tab">Open Positions</button>
                 </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="chart-tab" data-bs-toggle="tab" data-bs-target="#chart" type="button" role="tab">Chart</button>
+                </li>
             </ul>
 
             <div class="tab-content" id="orderTabsContent">
@@ -280,6 +283,21 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="chart" role="tabpanel">
+                    <div class="card h-100">
+                        <div class="card-body p-0" style="height: 600px;">
+                            <div class="tradingview-widget-container h-100" id="tradingviewWidgetContainer" style="height: 100%; width: 100%;">
+                                <div class="tradingview-widget-container__widget" id="tradingviewWidget" style="height: calc(100% - 32px); width: 100%;"></div>
+                                <div class="tradingview-widget-copyright">
+                                    <a id="tradingviewWidgetLink" href="https://www.tradingview.com/symbols/BTCUSD/?exchange=KRAKEN" rel="noopener nofollow" target="_blank">
+                                        <span class="blue-text">Bitcoin price</span>
+                                    </a>
+                                    <span class="trademark"> by TradingView</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

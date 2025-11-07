@@ -3,9 +3,12 @@ let openOrdersData = [];
 const openPositionsBody = document.getElementById('openPositionsTable');
 const themeToggleButton = document.getElementById('themeToggle');
 const THEME_STORAGE_KEY = 'kraken-theme-preference';
+const TRADINGVIEW_WIDGET_SRC = 'https://s3.tradingview.com/tv.js';
 
 let activeTheme = 'light';
 let hasStoredThemePreference = false;
+let tradingViewScriptPromise = null;
+let tradingViewWidgetInstance = null;
 
 function getStoredTheme() {
   try {
@@ -43,6 +46,11 @@ function applyTheme(theme) {
     themeColorMeta.setAttribute('content', activeTheme === 'dark' ? '#0f172a' : '#f5f6fa');
   }
   setToggleState(activeTheme);
+  if (document.getElementById('tradingviewWidgetContainer')) {
+    const assetSelect = document.getElementById('asset');
+    const currentPair = assetSelect && assetSelect.value ? assetSelect.value : 'BTC/USD';
+    updateTradingViewWidget(currentPair);
+  }
 }
 
 const storedTheme = getStoredTheme();
@@ -504,6 +512,123 @@ async function updateStartPrice() {
     }
 }
 
+function formatTradingViewSymbol(pair) {
+    if (!pair) return 'KRAKEN:BTCUSD';
+    return `KRAKEN:${pair.replace('/', '')}`;
+}
+
+function loadTradingViewScript() {
+    if (window.TradingView && typeof window.TradingView.widget === 'function') {
+        return Promise.resolve();
+    }
+
+    if (tradingViewScriptPromise) {
+        return tradingViewScriptPromise;
+    }
+
+    tradingViewScriptPromise = new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.type = 'text/javascript';
+        script.src = TRADINGVIEW_WIDGET_SRC;
+        script.async = true;
+        script.onload = () => {
+            if (window.TradingView && typeof window.TradingView.widget === 'function') {
+                resolve();
+            } else {
+                tradingViewScriptPromise = null;
+                reject(new Error('TradingView widget library unavailable after load'));
+            }
+        };
+        script.onerror = () => {
+            tradingViewScriptPromise = null;
+            reject(new Error('Failed to load TradingView widget script'));
+        };
+
+        const targetNode = document.body || document.head || document.documentElement;
+        targetNode.appendChild(script);
+    });
+
+    return tradingViewScriptPromise;
+}
+
+function updateTradingViewAttribution(pair) {
+    const label = document.getElementById('chartPairLabel');
+    const link = document.getElementById('tradingviewWidgetLink');
+    const info = typeof getPairInfo === 'function' ? getPairInfo(pair) : null;
+    const pairText = pair || 'BTC/USD';
+    if (label) {
+        label.textContent = info ? `${info.name} (${pairText})` : pairText;
+    }
+
+    if (link) {
+        const sanitized = pairText.replace('/', '');
+        link.href = `https://www.tradingview.com/symbols/${sanitized}/?exchange=KRAKEN`;
+        const linkText = info ? `${info.name} price` : `${pairText} price`;
+        const textSpan = link.querySelector('.blue-text');
+        if (textSpan) {
+            textSpan.textContent = linkText;
+        } else {
+            link.textContent = linkText;
+        }
+    }
+}
+
+async function updateTradingViewWidget(pair) {
+    const container = document.getElementById('tradingviewWidgetContainer');
+    const widgetContainer = document.getElementById('tradingviewWidget');
+    if (!container || !widgetContainer) return;
+
+    try {
+        await loadTradingViewScript();
+    } catch (error) {
+        console.error('Unable to load TradingView widget script', error);
+        return;
+    }
+
+    if (tradingViewWidgetInstance && typeof tradingViewWidgetInstance.remove === 'function') {
+        tradingViewWidgetInstance.remove();
+    }
+    tradingViewWidgetInstance = null;
+
+    widgetContainer.innerHTML = '';
+
+    const isDarkTheme = activeTheme === 'dark';
+    const config = {
+        container_id: widgetContainer.id,
+        allow_symbol_change: true,
+        autosize: true,
+        calendar: false,
+        compareSymbols: [],
+        details: false,
+        hide_legend: false,
+        hide_side_toolbar: true,
+        hide_top_toolbar: false,
+        hide_volume: false,
+        hotlist: false,
+        interval: 'D',
+        locale: 'en',
+        save_image: true,
+        style: '1',
+        studies: [],
+        symbol: formatTradingViewSymbol(pair),
+        theme: isDarkTheme ? 'dark' : 'light',
+        timezone: 'Etc/UTC',
+        backgroundColor: isDarkTheme ? '#0f172a' : '#ffffff',
+        gridColor: isDarkTheme ? 'rgba(255, 255, 255, 0.08)' : 'rgba(46, 46, 46, 0.06)',
+        watchlist: [],
+        withdateranges: false,
+    };
+
+    try {
+        tradingViewWidgetInstance = new window.TradingView.widget(config);
+    } catch (error) {
+        console.error('Failed to initialize TradingView widget', error);
+        return;
+    }
+
+    updateTradingViewAttribution(pair);
+}
+
 async function fetchOpenOrders() {
     const tbody = document.getElementById('openOrdersTable');
     const errorDiv = document.getElementById('orderError');
@@ -938,6 +1063,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (maxLeverage < currentLeverage) document.getElementById('leverage').value = maxLeverage;
         updateTotalVolume(this.value, Math.min(maxLeverage, currentLeverage));
         updateStartPrice();
+        updateTradingViewWidget(this.value);
     });
     document.getElementById('direction').addEventListener('change', updateFirstOrderPrice);
     document.getElementById('priceOffset').addEventListener('input', updateFirstOrderPrice);
@@ -960,6 +1086,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize asset options
     populateAssetOptions();
+    const initialPair = document.getElementById('asset') ? document.getElementById('asset').value : 'BTC/USD';
+    updateTradingViewWidget(initialPair);
     fetchOpenPositions();
 
     // Start balance updates
@@ -984,5 +1112,3 @@ document.addEventListener(
   },
   true
 );
-
-
