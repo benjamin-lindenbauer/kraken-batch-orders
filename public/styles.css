@@ -253,6 +253,11 @@ a:hover {
   color: var(--text-primary);
 }
 
+.card-header h5,
+.form-check-label {
+  color: var(--text-primary);
+}
+
 .input-group-text {
   border-radius: 14px;
   border: 1px solid var(--border);

@@ -93,7 +93,7 @@ function renderEmptyRow() {
   if (!openPositionsBody) return
   openPositionsBody.innerHTML = `
     <tr>
-      <td colspan="13" class="table-placeholder">No open positions available.</td>
+      <td colspan="13" class="table-placeholder">No open positions</td>
     </tr>
   `
 }
