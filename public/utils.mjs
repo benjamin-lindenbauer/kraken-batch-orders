@@ -65,7 +65,7 @@ export const TRADING_PAIRS = {
     'ZEC/USD': {
         symbol: 'ZEC',
         name: 'Zcash',
-        leverage: '2',
+        leverage: '3',
         priceDecimals: 2
     },
     'PAXG/USD': {
@@ -74,7 +74,18 @@ export const TRADING_PAIRS = {
         leverage: '3',
         priceDecimals: 2
     },
-
+    'LTC/USD': {
+        symbol: 'LTC',
+        name: 'Litecoin',
+        leverage: '5',
+        priceDecimals: 2
+    },
+    'ICP/USD': {
+        symbol: 'ICP',
+        name: 'Internet Computer',
+        leverage: '3',
+        priceDecimals: 3
+    },
 };
 
 // Get all supported assets
