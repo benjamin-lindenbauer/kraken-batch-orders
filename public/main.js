@@ -453,11 +453,16 @@ function calculateOrders() {
     });
 
     // Calculate liquidation price
-    const liquidationPrice = leverage === 'spot' ? 0 : totalCoins > 0 
+    const liquidationPrice = totalValue > totalBalance 
         ? ((direction === 'buy' 
             ? (totalValue - totalBalance) 
             : (totalValue + totalBalance)) / totalCoins).toFixed(priceDecimals)
-        : 'N/A';
+        : '-';
+
+    const formattedLiquidationPrice = liquidationPrice === '-' ? '-' : `$${liquidationPrice}`;
+
+    // Calculate leverage used
+    const leverageUsed = leverage !== 'spot' && totalValue > 0 && totalBalance > 0 ? (totalValue / totalBalance).toFixed(2) : '-';
 
     // Add summary row
     tableHtml += `
@@ -467,7 +472,8 @@ function calculateOrders() {
             <td><strong>${totalCoins.toFixed(6)} Total volume</strong></td>
             <td><strong>$${totalValue.toFixed(2)} Total $</strong></td>
             <td><strong>${totalRange.toFixed(2)}% Total range</strong></td>
-            <td colspan="2"><strong>Liquidation: $${liquidationPrice}</strong></td>
+            <td><strong>Leverage: ${leverageUsed}</strong></td>
+            <td><strong>Liquidation: ${formattedLiquidationPrice}</strong></td>
         </tr>
     `;
 
