@@ -221,6 +221,41 @@ a:hover {
   padding: 1.25rem 1.5rem;
 }
 
+.card-header-responsive {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.card-header-responsive .header-actions-mobile {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+@media (max-width: 576px) {
+  .card-header-responsive {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .card-header-responsive .header-actions-mobile {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+  }
+
+  .card-header-responsive .form-check {
+    justify-content: flex-start;
+  }
+
+  .card-header-responsive .btn {
+    width: 100%;
+  }
+}
+
 .card-body {
   background: var(--surface);
   padding: 1.5rem;

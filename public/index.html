@@ -60,9 +60,9 @@
                 <div class="tab-pane fade show active" id="create" role="tabpanel">
                     <div id="orderForm" class="mb-2">
                         <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
+                            <div class="card-header card-header-responsive">
                                 <h5 class="mb-0">Batch order creation</h5>
-                                <div class="d-flex align-items-center gap-4">
+                                <div class="header-actions-mobile">
                                     <div class="form-check d-flex align-items-center gap-2">
                                         <input class="form-check-input mt-0" type="checkbox" id="reduceOnly">
                                         <label class="form-check-label" for="reduceOnly">Reduce only</label>
@@ -73,20 +73,20 @@
                             </div>
                             <div class="card-body">
                                 <!-- Row 1: Trading pair and current price -->
-                                <div class="row align-items-center mb-3">
-                                    <div class="col-4">
+                                <div class="row g-3 align-items-center mb-3">
+                                    <div class="col-12 col-md-4">
                                         <div class="input-group">
                                             <span class="input-group-text">Trading Pair</span>
                                             <select class="form-select" id="asset" required></select>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-12 col-md-4">
                                         <div class="input-group">
                                             <span class="input-group-text">Current Price</span>
                                             <div class="form-control" id="currentPrice"></div>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-12 col-md-4">
                                         <div class="input-group">
                                             <span class="input-group-text">Spot/Margin</span>
                                             <select class="form-select" id="leverage" required>
@@ -101,8 +101,8 @@
                                 </div>
 
                                 <!-- Row 2: Direction, Amount of Orders, Total Amount -->
-                                <div class="row align-items-center mb-3">
-                                    <div class="col-4">
+                                <div class="row g-3 align-items-center mb-3">
+                                    <div class="col-12 col-md-4">
                                         <div class="input-group">
                                             <span class="input-group-text">Direction</span>
                                             <select class="form-select" id="direction" required>
@@ -111,13 +111,13 @@
                                             </select>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-12 col-md-4">
                                         <div class="input-group">
                                             <span class="input-group-text">Number of Orders</span>
                                             <input type="number" class="form-control" id="numOrders" value="15" min="1" max="30" required>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-12 col-md-4">
                                         <div class="input-group">
                                             <span class="input-group-text">Price Offset %</span>
                                             <input type="number" class="form-control" id="priceOffset" value="2.5" min="0.0" max="20.0" step="0.1" required>
@@ -126,20 +126,20 @@
                                 </div>
 
                                 <!-- Row 3: Price of First Order, Price Distance, Volume Increase -->
-                                <div class="row align-items-center mb-3">
-                                    <div class="col-4">
+                                <div class="row g-3 align-items-center mb-3">
+                                    <div class="col-12 col-md-4">
                                         <div class="input-group">
                                             <span class="input-group-text">First Order Price</span>
                                             <input type="number" class="form-control" id="start_price" value="80000.0" step="0.1" required>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-12 col-md-4">
                                         <div class="input-group">
                                             <span class="input-group-text">Order Price Distance %</span>
                                             <input type="number" class="form-control" id="distance" step="0.05" value="1.0" min="0.1" max="10.0" required>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-12 col-md-4">
                                         <div class="input-group">
                                             <span class="input-group-text">Volume Increase %</span>
                                             <input type="number" class="form-control" id="volume_distance" step="0.5" value="10" min="1" max="30" required>
@@ -148,14 +148,14 @@
                                 </div>
 
                                 <!-- Row 4: Stop Loss, Take Profit -->
-                                <div class="row align-items-center">
-                                    <div class="col-4">
+                                <div class="row g-3 align-items-center">
+                                    <div class="col-12 col-md-4">
                                         <div class="input-group">
                                             <span class="input-group-text" id="leverageText">Total Order Volume $</span>
                                             <input type="number" class="form-control" id="total" step="100" value="50000" min="100" required>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-12 col-md-4">
                                         <div class="input-group">
                                             <div class="input-group-text">
                                                 <input class="form-check-input mt-0" type="checkbox" id="enableStopLoss">
@@ -164,7 +164,7 @@
                                             <input type="number" class="form-control" id="stop_loss" value="2.5" min="0.0" max="20.0" step="0.5" disabled>
                                         </div>
                                     </div>
-                                    <div class="col-4">
+                                    <div class="col-12 col-md-4">
                                         <div class="input-group">
                                             <div class="input-group-text">
                                                 <input class="form-check-input mt-0" type="checkbox" id="enableTakeProfit" checked>
