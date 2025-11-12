@@ -261,10 +261,6 @@ a:hover {
   padding: 1.5rem;
 }
 
-.card-body .row + .row {
-  margin-top: 1.2rem;
-}
-
 .form-control,
 .form-select {
   border-radius: 14px;

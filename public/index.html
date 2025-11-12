@@ -125,7 +125,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Row 3: Price of First Order, Price Distance, Volume Increase -->
+                                <!-- Row 3: Price of First Order, Price Distance, Order Value Increase -->
                                 <div class="row g-3 align-items-center mb-3">
                                     <div class="col-12 col-md-4">
                                         <div class="input-group">
@@ -141,7 +141,7 @@
                                     </div>
                                     <div class="col-12 col-md-4">
                                         <div class="input-group">
-                                            <span class="input-group-text">Volume Increase %</span>
+                                            <span class="input-group-text">Order Value Increase %</span>
                                             <input type="number" class="form-control" id="volume_distance" step="0.5" value="10" min="1" max="30" required>
                                         </div>
                                     </div>
@@ -151,8 +151,8 @@
                                 <div class="row g-3 align-items-center">
                                     <div class="col-12 col-md-4">
                                         <div class="input-group">
-                                            <span class="input-group-text" id="leverageText">Total Order Volume $</span>
-                                            <input type="number" class="form-control" id="total" step="100" value="50000" min="100" required>
+                                            <span class="input-group-text" id="totalValueText">Total Order Value</span>
+                                            <input type="number" class="form-control" id="totalValue" step="100" value="20000" min="100" required>
                                         </div>
                                     </div>
                                     <div class="col-12 col-md-4">
@@ -240,7 +240,7 @@
                                     <th>Leverage</th>
                                     <th>Price</th>
                                     <th>Volume</th>
-                                    <th>$ Value</th>
+                                    <th>Value</th>
                                     <th>Open Time</th>
                                     <th>Action</th>
                                 </tr>

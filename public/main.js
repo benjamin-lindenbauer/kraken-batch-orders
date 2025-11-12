@@ -310,7 +310,7 @@ function renderOpenOrdersTable({ customMessage, messageClass } = {}) {
         const price = parseFloat(order.descr.price);
         const volume = parseFloat(order.vol);
         const totalValue = Number.isFinite(price) && Number.isFinite(volume)
-            ? `$${(price * volume).toFixed(2)}`
+            ? `${(price * volume).toFixed(2)}`
             : '-';
         const openTime = formatOpenTime(order.opentm);
 
@@ -377,10 +377,10 @@ function calculateOrders() {
     const stopLoss = parseFloat(document.getElementById('stop_loss').value);
     const takeProfit = parseFloat(document.getElementById('take_profit').value);
     const volumeDistance = parseFloat(document.getElementById('volume_distance').value);
-    const currentPrice = parseFloat(document.getElementById('currentPrice').textContent.replace('$', ''));
+    const currentPrice = parseFloat(document.getElementById('currentPrice').textContent);
     const totalBalance = parseFloat(document.getElementById('totalBalance').textContent.replace(/[^0-9.-]/g, ''));
     const direction = document.getElementById('direction').value;
-    const total = parseFloat(document.getElementById('total').value);
+    const total = parseFloat(document.getElementById('totalValue').value);
     const asset = document.getElementById('asset').value;
     const leverage = document.getElementById('leverage').value;
 
@@ -435,6 +435,8 @@ function calculateOrders() {
     let tableHtml = '';
     let totalValue = 0;
     let totalCoins = 0;
+    const baseAsset = asset.split('/')[0];
+    const quoteAsset = asset.split('/')[1].replace('USD', '$').replace('EUR', '€');
 
     orders.forEach((order, index) => {
         totalValue += order.total;
@@ -442,12 +444,12 @@ function calculateOrders() {
         tableHtml += `
             <tr>
                 <td>${index + 1}</td>
-                <td>$${order.orderPrice.toFixed(priceDecimals)}</td>
-                <td>${order.volume.toFixed(6)} ${pairInfo.symbol}</td>
-                <td>$${order.total.toFixed(2)}</td>
+                <td>${order.orderPrice.toFixed(priceDecimals)}</td>
+                <td>${order.volume.toFixed(6)} ${baseAsset}</td>
+                <td>${order.total.toFixed(2)}</td>
                 <td>${order.distanceToCurrent.toFixed(2)}%</td>
-                <td>$${order.stopLossPrice.toFixed(priceDecimals)}</td>
-                <td>$${order.takeProfitPrice.toFixed(priceDecimals)}</td>
+                <td>${order.stopLossPrice.toFixed(priceDecimals)}</td>
+                <td>${order.takeProfitPrice.toFixed(priceDecimals)}</td>
             </tr>
         `;
     });
@@ -459,7 +461,7 @@ function calculateOrders() {
             : (totalValue + totalBalance)) / totalCoins).toFixed(priceDecimals)
         : '-';
 
-    const formattedLiquidationPrice = liquidationPrice === '-' ? '-' : `$${liquidationPrice}`;
+    const formattedLiquidationPrice = liquidationPrice === '-' ? '-' : `${liquidationPrice}`;
 
     // Calculate leverage used
     const leverageUsed = leverage !== 'spot' && totalValue > 0 && totalBalance > 0 ? (totalValue / totalBalance).toFixed(2) : '-';
@@ -468,26 +470,26 @@ function calculateOrders() {
     tableHtml += `
         <tr>
             <td><strong></strong></td>
-            <td><strong>$${(totalValue / totalCoins).toFixed(priceDecimals)} Average price</strong></td>
-            <td><strong>${totalCoins.toFixed(6)} Total volume</strong></td>
-            <td><strong>$${totalValue.toFixed(2)} Total $</strong></td>
+            <td><strong>${(totalValue / totalCoins).toFixed(priceDecimals)} Average price</strong></td>
+            <td><strong>${totalCoins.toFixed(6)} Total ${baseAsset}</strong></td>
+            <td><strong>${totalValue.toFixed(2)} Total ${quoteAsset}</strong></td>
             <td><strong>${totalRange.toFixed(2)}% Total range</strong></td>
             <td><strong>Leverage: ${leverageUsed}</strong></td>
             <td><strong>Liquidation: ${formattedLiquidationPrice}</strong></td>
         </tr>
     `;
-
+    
     tableHtml = `
         <table class="table table-striped">
             <thead>
                 <tr>
                     <th>#</th>
-                    <th>Price</th>
-                    <th>Order Volume</th>
-                    <th>Order Volume $</th>
+                    <th>Price ${quoteAsset}</th>
+                    <th>Order Value ${baseAsset}</th>
+                    <th>Order Value ${quoteAsset}</th>
                     <th>Distance to Current Price</th>
-                    <th>Stop Loss</th>
-                    <th>Take Profit</th>
+                    <th>Stop Loss ${quoteAsset}</th>
+                    <th>Take Profit ${quoteAsset}</th>
                 </tr>
             </thead>
             <tbody>
@@ -508,7 +510,7 @@ async function updateStartPrice() {
         
         const result = data.result[Object.keys(data.result)[0]];
         const lastPrice = parseFloat(result.c[0]);
-        document.getElementById('currentPrice').textContent = `$${lastPrice}`;
+        document.getElementById('currentPrice').textContent = lastPrice;
 
         updateFirstOrderPrice();
     } catch (error) {
@@ -801,7 +803,7 @@ function updateTotalVolume(asset, newLeverage) {
     if (pairInfo) {
         const totalBalance = parseFloat(document.getElementById('totalBalance').textContent.replace('Total $', ''));
         const leverage = parseInt(newLeverage || document.getElementById('leverage').value);
-        document.getElementById('total').value = totalBalance * (leverage || 1);
+        document.getElementById('totalValue').value = totalBalance * (leverage || 1);
         calculateOrders();
     }
 }
@@ -841,7 +843,7 @@ async function getTradeBalance() {
         // Get the trade balance and update the total input field
         document.getElementById('totalBalance').textContent = `Total $${parseInt(data.result.eb)}`;
         const leverage = parseInt(document.getElementById('leverage').value);
-        document.getElementById('total').value = parseInt(data.result.tb) * (leverage || 1);
+        document.getElementById('totalValue').value = parseInt(data.result.tb) * (leverage || 1);
     } catch (error) {
         console.error('Error fetching trade balance:', error);
     }
@@ -886,7 +888,7 @@ async function updateBalances() {
 function updateFirstOrderPrice() {
     const direction = document.getElementById('direction').value;
     const priceInput = document.getElementById('start_price');
-    const currentPrice = parseFloat(document.getElementById('currentPrice').textContent.replace('$', ''));
+    const currentPrice = parseFloat(document.getElementById('currentPrice').textContent);
     const pair = document.getElementById('asset').value;
     const pairInfo = window.getPairInfo(pair);
     const priceDecimals = pairInfo.priceDecimals;
@@ -921,7 +923,7 @@ async function createOrders(event) {
         leverage: parseInt(document.getElementById('leverage').value),
         distance: parseFloat(document.getElementById('distance').value),
         volume_distance: parseFloat(document.getElementById('volume_distance').value),
-        total: parseFloat(document.getElementById('total').value),
+        total: parseFloat(document.getElementById('totalValue').value),
         stop_loss: stopLossEnabled ? parseFloat(document.getElementById('stop_loss').value) : null,
         take_profit: takeProfitEnabled ? parseFloat(document.getElementById('take_profit').value) : null,
         reduce_only: document.getElementById('reduceOnly') ? document.getElementById('reduceOnly').checked : false
@@ -1018,7 +1020,7 @@ const formatCurrency = (value) => {
 function updateLosses() {
   try {
     const direction = document.getElementById('direction').value;
-    const currentPrice = parseFloat(document.getElementById('currentPrice').textContent.replace('$', ''));
+    const currentPrice = parseFloat(document.getElementById('currentPrice').textContent);
     
     if (!currentPrice || !direction) return;
     if (isNaN(currentPrice)) throw new Error('Invalid current price');

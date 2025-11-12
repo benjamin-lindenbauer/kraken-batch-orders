@@ -13,7 +13,7 @@ A web application for creating and managing batch orders on Kraken (spot/margin)
   - First order price
   - Number of orders (1-30)
   - Price distance between orders (%)
-  - Volume increase percentage between orders (%)
+  - Order Value Increase percentage between orders (%)
   - Total USD amount to allocate across all orders
   - Optional stop-loss and take-profit levels
 
@@ -24,7 +24,7 @@ A web application for creating and managing batch orders on Kraken (spot/margin)
   - Stop-loss and take-profit prices
 - **Summary statistics**:
   - Average entry price
-  - Total volume and USD value
+  - Total value and USD value
   - Total price range percentage
   - Liquidation price (for leveraged positions)
 - **Price slider simulation**: Visualize P&L at different price levels with:

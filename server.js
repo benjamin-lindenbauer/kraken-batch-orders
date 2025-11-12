@@ -114,9 +114,9 @@ router.post('/api/batch-orders', async (req, res) => {
             sumFactors += Math.pow(1 + volume_distance / 100, i);
         }
         
-        //total volume should be total rounded to 100
+        //total value should be total rounded to 100
         const totalVolume = Math.floor(total / 100) * 100;
-        // Calculate the base price per order that will result in the desired total volume
+        // Calculate the base price per order that will result in the desired total value
         const basePrice = totalVolume / sumFactors;
         
         for (let i = 0; i < numOrders; i++) {
@@ -485,48 +485,57 @@ router.get('/api/open-positions', async (req, res) => {
         }
 
         const path = '/0/private/OpenPositions';
-        const nonce = generateNonce();
-        const searchParams = new URLSearchParams({ nonce });
-
         const { txid } = req.query;
+        const txidValue = Array.isArray(txid) ? txid.join(',') : (typeof txid === 'string' ? txid : undefined);
+        const maxAttempts = 3;
 
-        if (txid) {
-            const txidValue = Array.isArray(txid) ? txid.join(',') : String(txid);
-            if (txidValue.trim() !== '') {
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            const nonce = generateNonce();
+            const searchParams = new URLSearchParams();
+            searchParams.append('nonce', nonce);
+
+            if (txidValue && txidValue.trim() !== '') {
                 searchParams.append('txid', txidValue.trim());
             }
+
+            searchParams.append('consolidation', 'market');
+            const body = searchParams.toString();
+            const signature = getMessageSignature(path, body, apiSecret, nonce);
+
+            const response = await fetch(`https://api.kraken.com${path}`, {
+                method: 'POST',
+                headers: {
+                    'API-Key': apiKey,
+                    'API-Sign': signature,
+                    'Content-Type': 'application/x-www-form-urlencoded'
+                },
+                body
+            });
+
+            const payload = await response.json();
+
+            if (!response.ok) {
+                console.error('Kraken OpenPositions request failed:', payload);
+                return res.status(response.status).json({ error: [`Kraken request failed with status ${response.status}`] });
+            }
+
+            if (Array.isArray(payload.error) && payload.error.length > 0) {
+                const invalidNonce = payload.error.some(err => typeof err === 'string' && err.includes('EAPI:Invalid nonce'));
+                if (invalidNonce && attempt < maxAttempts) {
+                    await new Promise(resolve => setTimeout(resolve, attempt * 100));
+                    continue;
+                }
+                return res.status(400).json({ error: payload.error });
+            }
+
+            const result = payload.result ?? {};
+            return res.json({
+                positions: normaliseOpenPositions(result),
+                raw: result
+            });
         }
 
-        searchParams.append('consolidation', 'market');
-        const body = searchParams.toString();
-        const signature = getMessageSignature(path, body, apiSecret, nonce);
-
-        const response = await fetch(`https://api.kraken.com${path}`, {
-            method: 'POST',
-            headers: {
-                'API-Key': apiKey,
-                'API-Sign': signature,
-                'Content-Type': 'application/x-www-form-urlencoded'
-            },
-            body
-        });
-
-        const payload = await response.json();
-
-        if (!response.ok) {
-            console.error('Kraken OpenPositions request failed:', payload);
-            return res.status(response.status).json({ error: [`Kraken request failed with status ${response.status}`] });
-        }
-
-        if (Array.isArray(payload.error) && payload.error.length > 0) {
-            return res.status(400).json({ error: payload.error });
-        }
-
-        const result = payload.result ?? {};
-        res.json({
-            positions: normaliseOpenPositions(result),
-            raw: result
-        });
+        return res.status(400).json({ error: ['Failed to fetch open positions after retrying'] });
     } catch (error) {
         console.error('Error fetching open positions:', error);
         res.status(500).json({ error: [error.message || 'Unhandled error fetching open positions'] });

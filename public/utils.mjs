@@ -88,35 +88,27 @@ export const TRADING_PAIRS = {
     },
 };
 
-const QUOTE_CURRENCIES = ['USD', 'EUR'];
+const QUOTE_CURRENCIES = ['USD', 'EUR', 'BTC'];
 
 // Get all supported assets (base/quote pairs)
 export function getSupportedAssets() {
-    const defaultBases = new Set();
-    const defaultPairs = [];
-    const otherPairs = [];
+    const pairs = [];
 
-    Object.entries(TRADING_PAIRS).forEach(([base, info]) => {
-        if (info.default) {
-            defaultBases.add(base);
-        }
-
-        QUOTE_CURRENCIES.forEach((quote, index) => {
+    Object.keys(TRADING_PAIRS).forEach((base) => {
+        QUOTE_CURRENCIES.forEach((quote) => {
+            if (base === quote) return;
             const pair = `${base}/${quote}`;
-            if (info.default && index === 0) {
-                defaultPairs.push(pair);
-            } else {
-                otherPairs.push(pair);
-            }
+            pairs.push(pair);
         });
     });
 
-    return [...defaultPairs, ...otherPairs];
+    return pairs;
 }
 
 // Get pair info for a base/quote combination
 export function getPairInfo(asset) {
     const [base, quote] = asset.split('/');
+    if (quote === 'BTC') return {...TRADING_PAIRS[base], priceDecimals: 8};
     return TRADING_PAIRS[base];
 }
 
