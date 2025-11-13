@@ -872,7 +872,7 @@ async function updateBalances() {
 
         // Display top 3 balances
         significantBalances.forEach(([currency, amount]) => {
-            balanceHtml += `${parseFloat(amount).toFixed(currency === 'XBT' ? 4 : 2)} ${currency}, `;
+            balanceHtml += `${parseFloat(amount).toFixed(currency === 'USD' || currency === 'EUR' ? 2 : 4)} ${currency}, `;
         });
         //remove the last comma and space
         balanceHtml = balanceHtml.slice(0, -2);
