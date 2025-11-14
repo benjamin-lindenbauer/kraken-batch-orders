@@ -8,6 +8,7 @@ A web application for creating and managing batch orders on Kraken (spot/margin)
 - **Batch order creation** with up to 30 orders per batch
 - **Geometric price progression**: Orders placed at increasing/decreasing price intervals
 - **Geometric volume progression**: Order sizes increase/decrease geometrically across the batch
+- **Multi-quote trading pairs**: Trade each supported base asset against USD, EUR, or BTC with the correct leverage cap applied automatically
 - **Customizable parameters**:
   - Trading pair selection with pair-specific leverage limits
   - First order price
@@ -31,6 +32,11 @@ A web application for creating and managing batch orders on Kraken (spot/margin)
   - Realized and unrealized losses
   - Open and closed position sizes
 
+### Market Context & Charting
+- **TradingView chart tab** embedded directly in the UI with autosizing, dark/light theme awareness, and pair-aware attribution links
+- **One-click context switch**: Chart automatically follows the currently selected trading pair and keeps the TradingView widget in sync with UI theme toggles
+- **Quick access links** to the TradingView symbol page for deeper analysis
+
 ### Order Management
 - **View all open orders** with pair, type, price, volume, and USD value
 - **Cancel individual orders** or all orders at once
@@ -38,6 +44,7 @@ A web application for creating and managing batch orders on Kraken (spot/margin)
 - **Batch cancellation** for efficient position management
 - **Auto-refresh functionality** to keep order status current
 - **Account balance display** with total USD value
+- **Inline order editing**: Update the limit price or volume for an existing order (supports +/- offsets and percentages) and send the amendment via the `/api/amend-order` endpoint without leaving the table
 
 Note: Destructive actions (Cancel All and Cancel All for Pair) prompt for confirmation in the UI to prevent accidental cancellations.
 
@@ -45,6 +52,7 @@ Note: Destructive actions (Cancel All and Cancel All for Pair) prompt for confir
 
 ### Backend (Node.js + Express)
 - **API endpoints** for batch order creation, single orders, and order cancellation
+- **Order amendment proxy** that forwards inline edits to Kraken's `AmendOrder` API
 - **Kraken API integration** with proper request signing and nonce management
 - **Order batching logic**: Automatically splits large orders into batches (max 15 orders per batch)
 - **Geometric progression calculations** for price and volume distribution
@@ -55,22 +63,28 @@ Note: Destructive actions (Cancel All and Cancel All for Pair) prompt for confir
 - **Real-time calculations** for order preview and P&L simulation
 - **Live price fetching** from Kraken public API
 - **Account balance tracking** with trade balance queries
+- **TradingView integration** for a fully embedded chart that honors the current theme and selected trading pair
 
 ## Trading Pairs Support
 
-Currently supports the following trading pairs with their respective maximum leverage:
-- **BTC/USD** - 5x leverage
-- **ETH/USD** - 5x leverage
-- **XRP/USD** - 5x leverage
-- **SUI/USD** - 5x leverage
-- **DOGE/USD** - 5x leverage
-- **SOL/USD** - 5x leverage
-- **ADA/USD** - 5x leverage
-- **LINK/USD** - 5x leverage
-- **BNB/USD** - 3x leverage
-- **XLM/USD** - 2x leverage
-- **ZEC/USD** - 2x leverage
-- **PAXG/USD** - 3x leverage
+- **Quote currencies**: Every supported base asset can be traded against `USD`, `EUR`, and `BTC`. BTC-quoted pairs automatically use 8 decimal places for price precision.
+- **Base assets & leverage caps**:
+  - `BTC` – 5x
+  - `ETH` – 5x
+  - `XRP` – 5x
+  - `SUI` – 5x
+  - `DOGE` – 5x
+  - `SOL` – 5x
+  - `ADA` – 5x
+  - `LINK` – 5x
+  - `BNB` – 3x
+  - `XLM` – 2x
+  - `ZEC` – 3x
+  - `PAXG` – 3x
+  - `LTC` – 5x
+  - `ICP` – 3x
+
+Example pairs now include `BTC/EUR`, `ETH/BTC`, `SOL/USD`, and dozens more combinations generated from the supported base/quote sets.
 
 ## Setup
 
@@ -143,7 +157,9 @@ The application supports Netlify Functions for serverless deployment. Configurat
 - `POST /api/cancel-order` - Cancel a specific order
 - `POST /api/cancel-all` - Cancel all open orders
 - `POST /api/cancel-all-of-pair` - Cancel all orders for a trading pair
+- `POST /api/amend-order` - Amend the price and/or size of an existing order
 - `GET /api/open-orders` - Fetch all open orders
+- `GET /api/open-positions` - Fetch normalized open positions data
 - `GET /api/ticker/:pair` - Get current price for a pair
 - `GET /api/balances` - Get account balances
 - `POST /api/trade-balance` - Get trading balance for an asset
