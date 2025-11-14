@@ -333,7 +333,7 @@ function renderOpenOrdersTable({ customMessage, messageClass } = {}) {
                     <button type="button" class="btn btn-outline-secondary btn-sm ms-1 edit-order-button" onclick="enableOrderEdit('${orderId}')">
                         Edit
                     </button>
-                    <button type="button" class="btn btn-outline-danger btn-sm" onclick="cancelOrder('${orderId}', document.getElementById('order-${orderId}'))">
+                    <button type="button" class="btn btn-outline-danger btn-sm cancel-order-button" onclick="cancelOrder('${orderId}', document.getElementById('order-${orderId}'))">
                         Cancel
                     </button>
                     ${showCancelAllButton ? `
@@ -722,6 +722,68 @@ async function cancelOrder(txid, rowElement) {
     }
 }
 
+function removeCancelEditButton(row) {
+    const cancelButton = row.querySelector('.cancel-edit-button');
+    if (cancelButton && cancelButton.parentElement) {
+        cancelButton.parentElement.removeChild(cancelButton);
+    }
+}
+
+function cancelOrderEdit(orderId) {
+    const row = document.getElementById(`order-${orderId}`);
+    if (!row) {
+        return;
+    }
+
+    const match = openOrdersData.find(([id]) => id === orderId);
+    if (!match) {
+        return;
+    }
+
+    const [, order] = match;
+    const priceCell = row.querySelector('.order-price-cell');
+    const volumeCell = row.querySelector('.order-volume-cell');
+    const totalValueCell = volumeCell ? volumeCell.nextElementSibling : null;
+
+    if (priceCell) {
+        priceCell.textContent = order?.descr?.price ?? '';
+    }
+
+    if (volumeCell) {
+        volumeCell.textContent = order?.vol ?? '';
+    }
+
+    if (totalValueCell) {
+        const priceValue = Number(order?.descr?.price);
+        const volumeValue = Number(order?.vol);
+        if (Number.isFinite(priceValue) && Number.isFinite(volumeValue)) {
+            totalValueCell.textContent = (priceValue * volumeValue).toFixed(2);
+        } else {
+            totalValueCell.textContent = '-';
+        }
+    }
+
+    delete row.dataset.editing;
+
+    const submitButton = row.querySelector('.edit-order-button');
+    if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = 'Edit';
+        submitButton.classList.add('btn-outline-secondary');
+        submitButton.classList.remove('btn-outline-primary');
+        submitButton.onclick = function () {
+            enableOrderEdit(orderId);
+        };
+    }
+
+    removeCancelEditButton(row);
+
+    const cancelOrderButton = row.querySelector('.cancel-order-button');
+    if (cancelOrderButton) {
+        cancelOrderButton.classList.remove('d-none');
+    }
+}
+
 function enableOrderEdit(orderId) {
     const row = document.getElementById(`order-${orderId}`);
     if (!row || row.dataset.editing === 'true') {
@@ -760,6 +822,26 @@ function enableOrderEdit(orderId) {
         editButton.onclick = function () {
             submitOrderEdit(orderId);
         };
+
+        let cancelEditButton = row.querySelector('.cancel-edit-button');
+        if (!cancelEditButton) {
+            cancelEditButton = document.createElement('button');
+            cancelEditButton.type = 'button';
+            cancelEditButton.className = 'btn btn-outline-secondary btn-sm ms-1 cancel-edit-button';
+            cancelEditButton.textContent = 'Cancel';
+            editButton.parentElement?.insertBefore(cancelEditButton, editButton.nextSibling);
+        }
+
+        if (cancelEditButton) {
+            cancelEditButton.onclick = function () {
+                cancelOrderEdit(orderId);
+            };
+        }
+    }
+
+    const cancelOrderButton = row.querySelector('.cancel-order-button');
+    if (cancelOrderButton) {
+        cancelOrderButton.classList.add('d-none');
     }
 
     const priceInput = row.querySelector('.order-price-input');
@@ -865,12 +947,17 @@ async function submitOrderEdit(orderId) {
         }
 
         delete row.dataset.editing;
+        removeCancelEditButton(row);
+        const cancelOrderButton = row.querySelector('.cancel-order-button');
+        if (cancelOrderButton) {
+            cancelOrderButton.classList.remove('d-none');
+        }
 
         if (submitButton) {
             submitButton.disabled = false;
             submitButton.textContent = 'Edit';
             submitButton.classList.add('btn-outline-secondary');
-            submitButton.classList.remove('btn-primary');
+            submitButton.classList.remove('btn-outline-primary');
             submitButton.onclick = function () {
                 enableOrderEdit(orderId);
             };
