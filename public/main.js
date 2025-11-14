@@ -325,11 +325,14 @@ function renderOpenOrdersTable({ customMessage, messageClass } = {}) {
                 <td>${order.descr.type}</td>
                 <td>${orderType}</td>
                 <td>${order.descr.leverage}</td>
-                <td>${order.descr.price}</td>
-                <td>${order.vol}</td>
+                <td class="order-price-cell">${order.descr.price}</td>
+                <td class="order-volume-cell">${order.vol}</td>
                 <td>${totalValue}</td>
                 <td>${openTime}</td>
                 <td>
+                    <button type="button" class="btn btn-outline-secondary btn-sm ms-1 edit-order-button" onclick="enableOrderEdit('${orderId}')">
+                        Edit
+                    </button>
                     <button type="button" class="btn btn-outline-danger btn-sm" onclick="cancelOrder('${orderId}', document.getElementById('order-${orderId}'))">
                         Cancel
                     </button>
@@ -688,7 +691,7 @@ async function fetchOpenOrders() {
 async function cancelOrder(txid, rowElement) {
     const errorDiv = document.getElementById('orderError');
     errorDiv.classList.add('is-hidden');
-    
+
     try {
         const response = await fetch('/api/cancel-order', {
             method: 'POST',
@@ -719,10 +722,184 @@ async function cancelOrder(txid, rowElement) {
     }
 }
 
+function enableOrderEdit(orderId) {
+    const row = document.getElementById(`order-${orderId}`);
+    if (!row || row.dataset.editing === 'true') {
+        return;
+    }
+
+    const match = openOrdersData.find(([id]) => id === orderId);
+    if (!match) {
+        return;
+    }
+
+    const [, order] = match;
+    const priceCell = row.querySelector('.order-price-cell');
+    const volumeCell = row.querySelector('.order-volume-cell');
+    if (!priceCell || !volumeCell) {
+        return;
+    }
+
+    const priceValue = order?.descr?.price ?? '';
+    const volumeValue = order?.vol ?? '';
+
+    priceCell.innerHTML = `
+        <input type="text" class="form-control form-control-sm order-price-input" value="${escapeHtml(String(priceValue))}" />
+    `;
+    volumeCell.innerHTML = `
+        <input type="number" class="form-control form-control-sm order-volume-input" step="any" min="0" value="${escapeHtml(String(volumeValue))}" />
+    `;
+
+    row.dataset.editing = 'true';
+
+    const editButton = row.querySelector('.edit-order-button');
+    if (editButton) {
+        editButton.textContent = 'Submit';
+        editButton.classList.remove('btn-outline-secondary');
+        editButton.classList.add('btn-outline-primary');
+        editButton.onclick = function () {
+            submitOrderEdit(orderId);
+        };
+    }
+
+    const priceInput = row.querySelector('.order-price-input');
+    if (priceInput) {
+        priceInput.focus();
+        priceInput.select();
+    }
+}
+
+async function submitOrderEdit(orderId) {
+    const row = document.getElementById(`order-${orderId}`);
+    if (!row) {
+        return;
+    }
+
+    const priceInput = row.querySelector('.order-price-input');
+    const volumeInput = row.querySelector('.order-volume-input');
+    const errorDiv = document.getElementById('orderError');
+
+    if (!priceInput || !volumeInput) {
+        return;
+    }
+
+    const price = priceInput.value.trim();
+    const volume = volumeInput.value.trim();
+
+    const priceNumber = Number(price);
+    const volumeNumber = Number(volume);
+    const priceIsRelative = /^[+-]\d+(?:\.\d+)?%?$/.test(price);
+    const priceIsValidNumber = Number.isFinite(priceNumber) && priceNumber > 0;
+
+    if (!price || !volume || (!priceIsValidNumber && !priceIsRelative) || !Number.isFinite(volumeNumber) || volumeNumber <= 0) {
+        if (errorDiv) {
+            errorDiv.className = 'alert alert-danger mt-3';
+            errorDiv.textContent = 'Please provide a valid price (number or +/- offset) and a positive volume to amend the order.';
+            errorDiv.classList.remove('is-hidden');
+        }
+        return;
+    }
+
+    const submitButton = row.querySelector('.edit-order-button');
+    if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent = 'Submitting...';
+    }
+
+    try {
+        const response = await fetch('/api/amend-order', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                txid: orderId,
+                price,
+                volume
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || (Array.isArray(result.error) && result.error.length > 0)) {
+            const errorMessage = Array.isArray(result.error) && result.error.length > 0
+                ? result.error.join(', ')
+                : (result.error || `Server responded with status ${response.status}`);
+            throw new Error(errorMessage);
+        }
+
+        const priceCell = row.querySelector('.order-price-cell');
+        const volumeCell = row.querySelector('.order-volume-cell');
+        const totalValueCell = volumeCell ? volumeCell.nextElementSibling : null;
+
+        if (priceCell) {
+            priceCell.textContent = price;
+        }
+
+        if (volumeCell) {
+            volumeCell.textContent = volume;
+        }
+
+        if (totalValueCell) {
+            const priceValue = Number(price);
+            const volumeValue = Number(volume);
+            if (Number.isFinite(priceValue) && Number.isFinite(volumeValue)) {
+                totalValueCell.textContent = (priceValue * volumeValue).toFixed(2);
+            } else {
+                totalValueCell.textContent = '-';
+            }
+        }
+
+        const orderIndex = openOrdersData.findIndex(([id]) => id === orderId);
+        if (orderIndex !== -1) {
+            const [, existingOrder] = openOrdersData[orderIndex];
+            const updatedOrder = {
+                ...existingOrder,
+                vol: volume,
+                descr: {
+                    ...existingOrder.descr,
+                    price
+                }
+            };
+            openOrdersData[orderIndex] = [orderId, updatedOrder];
+        }
+
+        delete row.dataset.editing;
+
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Edit';
+            submitButton.classList.add('btn-outline-secondary');
+            submitButton.classList.remove('btn-primary');
+            submitButton.onclick = function () {
+                enableOrderEdit(orderId);
+            };
+        }
+
+        if (errorDiv) {
+            errorDiv.className = 'alert alert-success mt-3';
+            errorDiv.textContent = 'Order updated successfully.';
+            errorDiv.classList.remove('is-hidden');
+        }
+    } catch (error) {
+        if (errorDiv) {
+            errorDiv.className = 'alert alert-danger mt-3';
+            errorDiv.textContent = 'Error amending order: ' + (error instanceof Error ? error.message : String(error));
+            errorDiv.classList.remove('is-hidden');
+        }
+
+        if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = 'Submit';
+        }
+        return;
+    }
+}
+
 async function cancelAllOrders() {
     const errorDiv = document.getElementById('orderError');
     errorDiv.classList.add('is-hidden');
-    
+
     try {
         const response = await fetch('/api/cancel-all', {
             method: 'POST',

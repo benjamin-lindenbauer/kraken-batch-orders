@@ -285,6 +285,10 @@ a:hover {
   color: var(--text-primary);
 }
 
+.form-control-sm {
+  width: 6rem;
+}
+
 .card-header h5,
 .form-check-label {
   color: var(--text-primary);

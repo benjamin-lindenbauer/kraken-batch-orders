@@ -201,7 +201,7 @@ router.post('/api/batch-orders', async (req, res) => {
 
 router.post('/api/add-order', async (req, res) => {
     const { asset, price, direction, leverage, total, stop_loss, take_profit, reduce_only } = req.body;
-    
+
     try {
         const pairInfo = getPairInfo(asset);
         if (!pairInfo) {
@@ -247,6 +247,57 @@ router.post('/api/add-order', async (req, res) => {
         res.json({orders: [response.data.result]});
     } catch (error) {
         res.status(500).json({ error: error.response?.data || error.message });
+    }
+});
+
+router.post('/api/amend-order', async (req, res) => {
+    try {
+        const { txid, price, volume } = req.body ?? {};
+
+        if (!txid || typeof txid !== 'string') {
+            return res.status(400).json({ error: ['Order ID (txid) is required'] });
+        }
+
+        const limitPrice = typeof price === 'number' ? price.toString() : (typeof price === 'string' ? price.trim() : '');
+        const orderQuantity = typeof volume === 'number' ? volume.toString() : (typeof volume === 'string' ? volume.trim() : '');
+
+        if (!limitPrice && !orderQuantity) {
+            return res.status(400).json({ error: ['Price or volume must be provided to amend an order'] });
+        }
+
+        const nonce = generateNonce();
+        const path = '/0/private/AmendOrder';
+        const requestData = {
+            nonce,
+            txid,
+            ...(limitPrice && { limit_price: limitPrice }),
+            ...(orderQuantity && { order_qty: orderQuantity })
+        };
+
+        const signature = getMessageSignature(path, JSON.stringify(requestData), process.env.KRAKEN_API_SECRET, nonce);
+
+        const config = {
+            method: 'post',
+            maxBodyLength: Infinity,
+            url: 'https://api.kraken.com' + path,
+            headers: {
+                'Content-Type': 'application/json',
+                'API-Key': process.env.KRAKEN_API_KEY,
+                'API-Sign': signature
+            },
+            data: requestData
+        };
+
+        const response = await axios(config);
+
+        if (response.data.error && response.data.error.length > 0) {
+            return res.status(400).json({ error: response.data.error });
+        }
+
+        res.json(response.data.result);
+    } catch (error) {
+        console.error('Error amending order:', error.response?.data || error.message);
+        res.status(500).json({ error: [error.response?.data?.error || error.message] });
     }
 });
 
