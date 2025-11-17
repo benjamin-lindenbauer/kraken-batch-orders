@@ -5,6 +5,16 @@ const themeToggleButton = document.getElementById('themeToggle');
 const THEME_STORAGE_KEY = 'kraken-theme-preference';
 const TRADINGVIEW_WIDGET_SRC = 'https://s3.tradingview.com/tv.js';
 
+const currencyMap = {
+    'XETH': 'ETH',
+    'XLTC': 'LTC',
+    'XXBT': 'BTC',
+    'XXRP': 'XRP',
+    'XZEC': 'ZEC',
+    'ZEUR': 'EUR',
+    'ZUSD': 'USD'
+};
+
 let activeTheme = 'light';
 let hasStoredThemePreference = false;
 let tradingViewScriptPromise = null;
@@ -86,7 +96,7 @@ if (themeToggleButton) {
 }
 
 function fixCurrencyNames(currency) {
-    return currency.replace('ZUSD', 'USD').replace('ZEUR', 'EUR').replace('XXBT', 'XBT').replace('XETH', 'ETH');
+    return currencyMap[currency] || currency;
 }
 
 function renderEmptyRow() {
