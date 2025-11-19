@@ -86,6 +86,18 @@ export const TRADING_PAIRS = {
         leverage: '3',
         priceDecimals: 3
     },
+    'TAO': {
+        symbol: 'TAO',
+        name: 'Bittensor',
+        leverage: '3',
+        priceDecimals: 3
+    },
+    'NEAR': {
+        symbol: 'NEAR',
+        name: 'NEAR Protocol',
+        leverage: '3',
+        priceDecimals: 3
+    },
 };
 
 const QUOTE_CURRENCIES = ['USD', 'EUR', 'BTC'];
