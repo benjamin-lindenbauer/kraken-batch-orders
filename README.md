@@ -36,6 +36,7 @@ A web application for creating and managing batch orders on Kraken (spot/margin)
 - **TradingView chart tab** embedded directly in the UI with autosizing, dark/light theme awareness, and pair-aware attribution links
 - **One-click context switch**: Chart automatically follows the currently selected trading pair and keeps the TradingView widget in sync with UI theme toggles
 - **Quick access links** to the TradingView symbol page for deeper analysis
+- **Stats tab** with live performance metrics: 30-day percentage move plus average daily range for every supported pair so you can gauge volatility before placing a batch
 
 ### Order Management
 - **View all open orders** with pair, type, price, volume, and USD value
