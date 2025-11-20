@@ -1291,11 +1291,183 @@ const formatCurrency = (value) => {
   return `$${Math.abs(value).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}${value < 0 ? ' (gain)' : ''}`;
 };
 
+let volatilityDataLoaded = false;
+let volatilityLoading = false;
+
+function getUsdPairs() {
+  if (!window.ASSETS) return [];
+  return Object.keys(window.ASSETS).map((symbol) => `${symbol}/USD`);
+}
+
+function krakenPairName(pair) {
+  return pair.replace('/', '');
+}
+
+function formatPercent(value) {
+  return Number.isFinite(value) ? `${value.toFixed(2)}%` : '--';
+}
+
+function calculateVolatilityMetrics(ohlcRows) {
+  if (!Array.isArray(ohlcRows) || ohlcRows.length < 2) return null;
+
+  const completedRows = ohlcRows.slice(0, -1);
+  if (completedRows.length === 0) return null;
+
+  const firstOpen = Number(completedRows[0]?.[1]);
+  const lastClose = Number(completedRows[completedRows.length - 1]?.[4]);
+
+  if (!Number.isFinite(firstOpen) || !Number.isFinite(lastClose)) return null;
+
+  let rangeSum = 0;
+  let rangeCount = 0;
+
+  completedRows.forEach((row) => {
+    const open = Number(row[1]);
+    const high = Number(row[2]);
+    const low = Number(row[3]);
+    const close = Number(row[4]);
+
+    if (![open, high, low, close].every(Number.isFinite)) return;
+
+    const direction = close >= open ? 'up' : 'down';
+    const base = direction === 'up' ? low : high;
+
+    if (!base || !Number.isFinite(base) || base === 0) return;
+
+    const range = (high - low) / base;
+    if (Number.isFinite(range)) {
+      rangeSum += range;
+      rangeCount += 1;
+    }
+  });
+
+  const averageRange = rangeCount > 0 ? (rangeSum / rangeCount) * 100 : 0;
+  const performance = ((lastClose - firstOpen) / firstOpen) * 100;
+
+  return { volatility: averageRange, performance };
+}
+
+async function fetchOhlcForPair(pair, sinceTimestamp) {
+  const interval = 1440; // 1 day
+  const query = new URLSearchParams({
+    pair: krakenPairName(pair),
+    interval: interval.toString(),
+    since: sinceTimestamp.toString(),
+  });
+
+  const response = await fetch(`https://api.kraken.com/0/public/OHLC?${query.toString()}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch OHLC for ${pair} (status ${response.status})`);
+  }
+
+  const payload = await response.json();
+  if (payload.error && payload.error.length > 0) {
+    throw new Error(payload.error.join(', '));
+  }
+
+  const seriesEntry = Object.entries(payload.result || {}).find(([key]) => key !== 'last');
+  if (!seriesEntry || !Array.isArray(seriesEntry[1])) {
+    throw new Error('No OHLC data returned');
+  }
+
+  const metrics = calculateVolatilityMetrics(seriesEntry[1]);
+  return { pair, metrics };
+}
+
+function renderStatsTable(results) {
+  const tableBody = document.getElementById('statsTableBody');
+  const statusElement = document.getElementById('volatilityStatus');
+  if (!tableBody) return;
+
+  if (!Array.isArray(results) || results.length === 0) {
+    tableBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No data available</td></tr>';
+    if (statusElement) statusElement.textContent = 'No OHLC data available for USD pairs.';
+    return;
+  }
+
+  const sortedResults = [...results].sort((a, b) => {
+    const aVol = Number.isFinite(a.metrics?.volatility) ? a.metrics.volatility : -Infinity;
+    const bVol = Number.isFinite(b.metrics?.volatility) ? b.metrics.volatility : -Infinity;
+    return bVol - aVol;
+  });
+
+  const rows = sortedResults.map(({ pair, metrics }) => {
+    const performanceValue = metrics?.performance;
+    const volatilityValue = metrics?.volatility;
+    const performanceClass = Number.isFinite(performanceValue)
+      ? performanceValue >= 0
+        ? 'text-success'
+        : 'text-danger'
+      : 'text-muted';
+    const volatilityClass = Number.isFinite(volatilityValue) ? '' : 'text-muted';
+
+    return `
+      <tr>
+        <td>${escapeHtml(pair)}</td>
+        <td class="text-end ${performanceClass}">${formatPercent(performanceValue)}</td>
+        <td class="text-end ${volatilityClass}">${formatPercent(volatilityValue)}</td>
+      </tr>
+    `;
+  });
+
+  tableBody.innerHTML = rows.join('');
+  if (statusElement) {
+    statusElement.classList.remove('text-danger');
+  }
+}
+
+async function loadStatsData() {
+  if (volatilityLoading || volatilityDataLoaded) return;
+
+  const statusElement = document.getElementById('volatilityStatus');
+  const tableBody = document.getElementById('statsTableBody');
+  if (!tableBody) return;
+
+  volatilityLoading = true;
+  if (statusElement) {
+    statusElement.classList.remove('text-danger');
+    statusElement.textContent = 'Fetching OHLC data for USD pairs...';
+  }
+
+  const sinceTimestamp = Math.floor(Date.now() / 1000) - 30 * 24 * 60 * 60;
+  const usdPairs = getUsdPairs();
+
+  try {
+    const results = await Promise.allSettled(
+      usdPairs.map((pair) => fetchOhlcForPair(pair, sinceTimestamp))
+    );
+
+    const successful = results
+      .filter((result) => result.status === 'fulfilled' && result.value)
+      .map((result) => result.value);
+
+    renderStatsTable(successful);
+
+    const failures = results.filter((result) => result.status === 'rejected');
+    if (failures.length > 0 && statusElement) {
+      statusElement.classList.add('text-danger');
+      statusElement.textContent = `Some pairs failed to load (${failures.length}/${usdPairs.length}).`;
+    }
+
+    volatilityDataLoaded = true;
+  } catch (error) {
+    if (tableBody) {
+      tableBody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Failed to load volatility data</td></tr>';
+    }
+    if (statusElement) {
+      statusElement.classList.add('text-danger');
+      statusElement.textContent = error instanceof Error ? error.message : 'Failed to load volatility data';
+    }
+  } finally {
+    volatilityLoading = false;
+  }
+}
+
 function updateLosses() {
   try {
     const direction = document.getElementById('direction').value;
     const currentPrice = parseFloat(document.getElementById('currentPrice').textContent);
-    
+
     if (!currentPrice || !direction) return;
     if (isNaN(currentPrice)) throw new Error('Invalid current price');
 
@@ -1328,6 +1500,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('open-orders-tab').addEventListener('click', fetchOpenOrders);
     document.getElementById('open-positions-tab').addEventListener('click', fetchOpenPositions);
+    const statsTab = document.getElementById('stats-tab');
+    if (statsTab) {
+        statsTab.addEventListener('shown.bs.tab', loadStatsData);
+    }
     document.getElementById('refreshOrders').addEventListener('click', fetchOpenOrders);
     const refreshPositionsButton = document.getElementById('refreshPositions');
     if (refreshPositionsButton) {
@@ -1371,6 +1547,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const initialPair = document.getElementById('asset') ? document.getElementById('asset').value : 'BTC/USD';
     updateTradingViewWidget(initialPair);
     fetchOpenPositions();
+    loadStatsData();
 
     // Start balance updates
     updateBalances().then(() => {

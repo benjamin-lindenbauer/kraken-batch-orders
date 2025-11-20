@@ -86,6 +86,12 @@ export const ASSETS = {
         leverage: '3',
         priceDecimals: 3
     },
+    'DASH': {
+        symbol: 'DASH',
+        name: 'Dash',
+        leverage: '3',
+        priceDecimals: 3
+    },
     'TAO': {
         symbol: 'TAO',
         name: 'Bittensor',
