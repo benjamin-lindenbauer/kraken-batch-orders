@@ -1,6 +1,6 @@
 // Utility functions for Kraken batch trading
 
-export const TRADING_PAIRS = {
+export const ASSETS = {
     'BTC': {
         symbol: 'BTC',
         name: 'Bitcoin',
@@ -106,7 +106,7 @@ const QUOTE_CURRENCIES = ['USD', 'EUR', 'BTC'];
 export function getSupportedAssets() {
     const pairs = [];
 
-    Object.keys(TRADING_PAIRS).forEach((base) => {
+    Object.keys(ASSETS).forEach((base) => {
         QUOTE_CURRENCIES.forEach((quote) => {
             if (base === quote) return;
             const pair = `${base}/${quote}`;
@@ -120,13 +120,13 @@ export function getSupportedAssets() {
 // Get pair info for a base/quote combination
 export function getPairInfo(asset) {
     const [base, quote] = asset.split('/');
-    if (quote === 'BTC') return {...TRADING_PAIRS[base], priceDecimals: 8};
-    return TRADING_PAIRS[base];
+    if (quote === 'BTC') return {...ASSETS[base], priceDecimals: 8};
+    return ASSETS[base];
 }
 
 // If we're in a browser environment, add to window object
 if (typeof window !== 'undefined') {
-    window.TRADING_PAIRS = TRADING_PAIRS;
+    window.ASSETS = ASSETS;
     window.getSupportedAssets = getSupportedAssets;
     window.getPairInfo = getPairInfo;
 }
