@@ -1,14 +1,14 @@
 {
-  "name": "kraken-batch-orders",
+  "name": "kraken-batch-trading",
   "version": "1.0.0",
-  "description": "Kraken Order Management",
+  "description": "Kraken Batch Trading with order management, stats and chart.",
   "main": "server.js",
   "type": "module",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "axios": "^1.13.1",
+    "axios": "^1.13.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0",
