@@ -349,7 +349,7 @@ function renderOpenOrdersTable({ customMessage, messageClass } = {}) {
                     </button>
                 </td>
                 <td>${pair}</td>
-                <td>${order.descr.type}</td>
+                <td><span class="order-type-${order.descr.type.toLowerCase()}">${order.descr.type}</span></td>
                 <td>${orderType}</td>
                 <td>${order.descr.leverage}</td>
                 <td class="order-price-cell">${order.descr.price}</td>

@@ -630,6 +630,24 @@ html[data-theme='dark'] .info-icon {
   color: var(--accent);
 }
 
+.order-type-sell {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.order-type-buy {
+  color: var(--success);
+  font-weight: 600;
+}
+
+html[data-theme='dark'] .order-type-sell {
+  color: #f87171;
+}
+
+html[data-theme='dark'] .order-type-buy {
+  color: #22c55e;
+}
+
 @media (max-width: 768px) {
   .app-header {
     flex-direction: column;
