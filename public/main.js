@@ -1286,9 +1286,9 @@ function calculateAndDisplayLosses(previewPrice, direction) {
     return { realizedLoss, unrealizedLoss, positionSize, closedPositionSize };
 };
 
-const formatCurrency = (value) => {
+const formatCurrency = (value, decimals = 2) => {
   if (isNaN(value)) return '-';
-  return `$${Math.abs(value).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}${value < 0 ? ' (gain)' : ''}`;
+  return `$${Math.abs(value).toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}${value < 0 ? ' (gain)' : ''}`;
 };
 
 let volatilityDataLoaded = false;
@@ -1307,7 +1307,7 @@ function formatPercent(value) {
   return Number.isFinite(value) ? `${value.toFixed(2)}%` : '--';
 }
 
-function calculateVolatilityMetrics(ohlcRows) {
+function calculateStats(ohlcRows) {
   if (!Array.isArray(ohlcRows) || ohlcRows.length < 2) return null;
 
   const completedRows = ohlcRows.slice(0, -1);
@@ -1320,12 +1320,14 @@ function calculateVolatilityMetrics(ohlcRows) {
 
   let rangeSum = 0;
   let rangeCount = 0;
+  let dollarVolumeSum = 0;
 
   completedRows.forEach((row) => {
     const open = Number(row[1]);
     const high = Number(row[2]);
     const low = Number(row[3]);
     const close = Number(row[4]);
+    const volume = Number(row[6]);
 
     if (![open, high, low, close].every(Number.isFinite)) return;
 
@@ -1339,12 +1341,17 @@ function calculateVolatilityMetrics(ohlcRows) {
       rangeSum += range;
       rangeCount += 1;
     }
+
+    if (Number.isFinite(close) && Number.isFinite(volume)) {
+      dollarVolumeSum += close * volume;
+    }
   });
 
   const averageRange = rangeCount > 0 ? (rangeSum / rangeCount) * 100 : 0;
   const performance = ((lastClose - firstOpen) / firstOpen) * 100;
+  const averageDollarVolume = dollarVolumeSum / rangeCount;
 
-  return { volatility: averageRange, performance };
+  return { volatility: averageRange, performance, averageDollarVolume };
 }
 
 async function fetchOhlcForPair(pair, sinceTimestamp) {
@@ -1370,7 +1377,7 @@ async function fetchOhlcForPair(pair, sinceTimestamp) {
     throw new Error('No OHLC data returned');
   }
 
-  const metrics = calculateVolatilityMetrics(seriesEntry[1]);
+  const metrics = calculateStats(seriesEntry[1]);
   return { pair, metrics };
 }
 
@@ -1380,7 +1387,7 @@ function renderStatsTable(results) {
   if (!tableBody) return;
 
   if (!Array.isArray(results) || results.length === 0) {
-    tableBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">No data available</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No data available</td></tr>';
     if (statusElement) statusElement.textContent = 'No OHLC data available for USD pairs.';
     return;
   }
@@ -1394,18 +1401,24 @@ function renderStatsTable(results) {
   const rows = sortedResults.map(({ pair, metrics }) => {
     const performanceValue = metrics?.performance;
     const volatilityValue = metrics?.volatility;
+    const averageDollarVolumeValue = metrics?.averageDollarVolume;
     const performanceClass = Number.isFinite(performanceValue)
       ? performanceValue >= 0
         ? 'text-success'
         : 'text-danger'
       : 'text-muted';
     const volatilityClass = Number.isFinite(volatilityValue) ? '' : 'text-muted';
+    const volumeClass = Number.isFinite(averageDollarVolumeValue) ? '' : 'text-muted';
+    const volumeDisplay = Number.isFinite(averageDollarVolumeValue)
+      ? formatCurrency(averageDollarVolumeValue, 0)
+      : '--';
 
     return `
       <tr>
         <td>${escapeHtml(pair)}</td>
         <td class="text-end ${performanceClass}">${formatPercent(performanceValue)}</td>
         <td class="text-end ${volatilityClass}">${formatPercent(volatilityValue)}</td>
+        <td class="text-end ${volumeClass}">${volumeDisplay}</td>
       </tr>
     `;
   });
@@ -1452,7 +1465,7 @@ async function loadStatsData() {
     volatilityDataLoaded = true;
   } catch (error) {
     if (tableBody) {
-      tableBody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Failed to load volatility data</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Failed to load volatility data</td></tr>';
     }
     if (statusElement) {
       statusElement.classList.add('text-danger');
