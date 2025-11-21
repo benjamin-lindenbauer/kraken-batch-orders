@@ -112,7 +112,7 @@ export const ASSETS = {
     },
 };
 
-const QUOTE_CURRENCIES = ['USD', 'EUR', 'BTC'];
+export const QUOTE_CURRENCIES = ['USD', 'EUR', 'BTC'];
 
 // Get all supported assets (base/quote pairs)
 export function getSupportedAssets() {
@@ -139,6 +139,7 @@ export function getPairInfo(asset) {
 // If we're in a browser environment, add to window object
 if (typeof window !== 'undefined') {
     window.ASSETS = ASSETS;
+    window.QUOTE_CURRENCIES = QUOTE_CURRENCIES;
     window.getSupportedAssets = getSupportedAssets;
     window.getPairInfo = getPairInfo;
 }

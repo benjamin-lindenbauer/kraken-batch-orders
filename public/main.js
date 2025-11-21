@@ -57,10 +57,27 @@ function applyTheme(theme) {
   }
   setToggleState(activeTheme);
   if (document.getElementById('tradingviewWidgetContainer')) {
-    const assetSelect = document.getElementById('asset');
-    const currentPair = assetSelect && assetSelect.value ? assetSelect.value : 'BTC/USD';
+    const currentPair = getSelectedPair() || 'BTC/USD';
     updateTradingViewWidget(currentPair);
   }
+}
+
+function getSelectedPair() {
+  const assetSelect = document.getElementById('asset');
+  const quoteSelect = document.getElementById('quote');
+  const assetValue = assetSelect ? assetSelect.value : '';
+  const quoteValue = quoteSelect ? quoteSelect.value : '';
+
+  if (assetValue && quoteValue) return `${assetValue}/${quoteValue}`;
+  if (assetValue) return `${assetValue}/USD`;
+  if (quoteValue) return `BTC/${quoteValue}`;
+  return null;
+}
+
+function getDefaultAssetSymbol() {
+  const assets = window.ASSETS ? Object.values(window.ASSETS) : [];
+  const defaultAsset = assets.find((asset) => asset.default);
+  return defaultAsset ? defaultAsset.symbol : assets[0]?.symbol || '';
 }
 
 const storedTheme = getStoredTheme();
@@ -394,7 +411,7 @@ function calculateOrders() {
     const totalBalance = parseFloat(document.getElementById('totalBalance').textContent.replace(/[^0-9.-]/g, ''));
     const direction = document.getElementById('direction').value;
     const total = parseFloat(document.getElementById('totalValue').value);
-    const asset = document.getElementById('asset').value;
+    const pair = getSelectedPair() || 'BTC/USD';
     const leverage = document.getElementById('leverage').value;
 
     if (!price || !numOrders || !distance || !volumeDistance || !total) {
@@ -435,7 +452,7 @@ function calculateOrders() {
         });
     }
 
-    const pairInfo = window.getPairInfo(asset);
+    const pairInfo = window.getPairInfo(pair) || { priceDecimals: 2 };
     const priceDecimals = pairInfo.priceDecimals;
 
     // Calculate total range first
@@ -448,8 +465,8 @@ function calculateOrders() {
     let tableHtml = '';
     let totalValue = 0;
     let totalCoins = 0;
-    const baseAsset = asset.split('/')[0];
-    const quoteAsset = asset.split('/')[1].replace('USD', '$').replace('EUR', '€');
+    const [baseAsset = '', quoteAssetRaw = 'USD'] = pair.split('/');
+    const quoteAsset = quoteAssetRaw.replace('USD', '$').replace('EUR', '€');
 
     orders.forEach((order, index) => {
         totalValue += order.total;
@@ -511,7 +528,7 @@ function calculateOrders() {
 }
 
 async function updateStartPrice() {
-    const pair = document.getElementById('asset').value;
+    const pair = getSelectedPair() || 'BTC/USD';
     try {
         const krakenPair = pair.replace('/', '');
         const response = await fetch(`/api/ticker/${krakenPair}`);
@@ -1072,8 +1089,9 @@ async function cancelAllOfPair(pair, orderIds) {
     }
 }
 
-function updateTotalVolume(asset, newLeverage) {
-    const pairInfo = getPairInfo(asset);
+function updateTotalVolume(pair, newLeverage) {
+    const currentPair = pair || getSelectedPair();
+    const pairInfo = currentPair ? getPairInfo(currentPair) : null;
     if (pairInfo) {
         const totalBalance = parseFloat(document.getElementById('totalBalance').textContent.replace('Total $', ''));
         const leverage = parseInt(newLeverage || document.getElementById('leverage').value);
@@ -1084,15 +1102,47 @@ function updateTotalVolume(asset, newLeverage) {
 
 function populateAssetOptions() {
     const assetSelect = document.getElementById('asset');
-    const assets = window.getSupportedAssets();
+    if (!assetSelect || !window.ASSETS) return;
 
+    const assets = Object.values(window.ASSETS);
     assetSelect.innerHTML = assets.map(asset => {
-        const assetInfo = window.getPairInfo(asset);
-        return `<option value="${asset}">${assetInfo.name} (${asset})</option>`;
+        return `<option value="${asset.symbol}">${asset.name} (${asset.symbol})</option>`;
     }).join('');
 
-    assetSelect.value = assets[0];
-    document.getElementById('leverage').value = window.getPairInfo(assets[0]).leverage;
+    const defaultAssetSymbol = getDefaultAssetSymbol();
+    if (defaultAssetSymbol) {
+        assetSelect.value = defaultAssetSymbol;
+    }
+}
+
+function populateQuoteOptions() {
+    const quoteSelect = document.getElementById('quote');
+    if (!quoteSelect || !window.QUOTE_CURRENCIES) return;
+
+    quoteSelect.innerHTML = window.QUOTE_CURRENCIES.map(quote => `<option value="${quote}">${quote}</option>`).join('');
+    if (window.QUOTE_CURRENCIES.length > 0) {
+        quoteSelect.value = window.QUOTE_CURRENCIES[0];
+    }
+}
+
+function setLeverageForCurrentPair() {
+    const pair = getSelectedPair();
+    const pairInfo = pair ? window.getPairInfo(pair) : null;
+    if (pairInfo) {
+        document.getElementById('leverage').value = pairInfo.leverage;
+    }
+}
+
+function handlePairChange() {
+    const pair = getSelectedPair() || 'BTC/USD';
+    const pairInfo = getPairInfo(pair);
+    const maxLeverage = pairInfo ? parseInt(pairInfo.leverage) : 5;
+    const leverageSelect = document.getElementById('leverage');
+    const currentLeverage = leverageSelect ? parseInt(leverageSelect.value) : 1;
+    if (leverageSelect && maxLeverage < currentLeverage) leverageSelect.value = maxLeverage;
+    updateTotalVolume(pair, Math.min(maxLeverage, currentLeverage));
+    updateStartPrice();
+    updateTradingViewWidget(pair);
 }
 
 async function getTradeBalance() {
@@ -1163,8 +1213,8 @@ function updateFirstOrderPrice() {
     const direction = document.getElementById('direction').value;
     const priceInput = document.getElementById('start_price');
     const currentPrice = parseFloat(document.getElementById('currentPrice').textContent);
-    const pair = document.getElementById('asset').value;
-    const pairInfo = window.getPairInfo(pair);
+    const pair = getSelectedPair() || 'BTC/USD';
+    const pairInfo = window.getPairInfo(pair) || { priceDecimals: 2 };
     const priceDecimals = pairInfo.priceDecimals;
     //step should be 0.01 if priceDecimals is 2
     priceInput.setAttribute('step', '0.' + '0'.repeat(priceDecimals - 1) + '1');
@@ -1190,7 +1240,7 @@ async function createOrders(event) {
     const takeProfitEnabled = document.getElementById('enableTakeProfit').checked;
 
     const formData = {
-        asset: document.getElementById('asset').value,
+        asset: getSelectedPair() || 'BTC/USD',
         price: parseFloat(document.getElementById('start_price').value),
         direction: document.getElementById('direction').value,
         numOrders,
@@ -1527,15 +1577,14 @@ document.addEventListener('DOMContentLoaded', () => {
         pairFilter.addEventListener('change', () => renderOpenOrdersTable());
     }
     document.getElementById('cancelAll').addEventListener('click', cancelAllOrders);
-    document.getElementById('asset').addEventListener('change', function() {
-        const pairInfo = getPairInfo(this.value);
-        const maxLeverage = pairInfo ? parseInt(pairInfo.leverage) : 5;
-        const currentLeverage = parseInt(document.getElementById('leverage').value);
-        if (maxLeverage < currentLeverage) document.getElementById('leverage').value = maxLeverage;
-        updateTotalVolume(this.value, Math.min(maxLeverage, currentLeverage));
-        updateStartPrice();
-        updateTradingViewWidget(this.value);
-    });
+    const assetSelect = document.getElementById('asset');
+    if (assetSelect) {
+        assetSelect.addEventListener('change', handlePairChange);
+    }
+    const quoteSelect = document.getElementById('quote');
+    if (quoteSelect) {
+        quoteSelect.addEventListener('change', handlePairChange);
+    }
     document.getElementById('direction').addEventListener('change', updateFirstOrderPrice);
     document.getElementById('priceOffset').addEventListener('input', updateFirstOrderPrice);
     document.getElementById('enableStopLoss').addEventListener('change', function() {
@@ -1546,18 +1595,20 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('priceSlider').addEventListener('input', updateLosses);
     document.getElementById('leverage').addEventListener('change', function() {
-        const asset = document.getElementById('asset').value;
-        const pairInfo = getPairInfo(asset);
+        const pair = getSelectedPair() || 'BTC/USD';
+        const pairInfo = getPairInfo(pair);
         const maxLeverage = pairInfo ? parseInt(pairInfo.leverage) : 5;
         const newLeverage = Math.min(maxLeverage, parseInt(this.value) || 1);
         if (this.value !== 'spot') document.getElementById('leverage').value = newLeverage;
-        updateTotalVolume(asset, newLeverage);
+        updateTotalVolume(pair, newLeverage);
     });
     document.getElementById('createButton').addEventListener('click', createOrders);
 
     // Initialize asset options
     populateAssetOptions();
-    const initialPair = document.getElementById('asset') ? document.getElementById('asset').value : 'BTC/USD';
+    populateQuoteOptions();
+    setLeverageForCurrentPair();
+    const initialPair = getSelectedPair() || 'BTC/USD';
     updateTradingViewWidget(initialPair);
     fetchOpenPositions();
     loadStatsData();
