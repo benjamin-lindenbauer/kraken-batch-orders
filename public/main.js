@@ -1343,6 +1343,7 @@ const formatCurrency = (value, decimals = 2) => {
 
 let volatilityDataLoaded = false;
 let volatilityLoading = false;
+let currentStatsSort = { column: null, direction: 'desc' };
 
 function getUsdPairs() {
   if (!window.ASSETS) return [];
@@ -1404,6 +1405,22 @@ function calculateStats(ohlcRows) {
   return { volatility: averageRange, performance, averageDollarVolume };
 }
 
+function calculate7DayStats(ohlcRows) {
+  if (!Array.isArray(ohlcRows) || ohlcRows.length < 2) return null;
+
+  // Get last 7 items (or all if less than 7)
+  const last7Days = ohlcRows.length >= 8 ? ohlcRows.slice(-8, -1) : ohlcRows.slice(0, -1);
+  if (last7Days.length === 0) return null;
+
+  const firstOpen = Number(last7Days[0]?.[1]);
+  const lastClose = Number(last7Days[last7Days.length - 1]?.[4]);
+
+  if (!Number.isFinite(firstOpen) || !Number.isFinite(lastClose)) return null;
+
+  const performance7Day = ((lastClose - firstOpen) / firstOpen) * 100;
+  return performance7Day;
+}
+
 async function fetchOhlcForPair(pair, sinceTimestamp) {
   const interval = 1440; // 1 day
   const query = new URLSearchParams({
@@ -1428,32 +1445,106 @@ async function fetchOhlcForPair(pair, sinceTimestamp) {
   }
 
   const metrics = calculateStats(seriesEntry[1]);
-  return { pair, metrics };
+  const performance7Day = calculate7DayStats(seriesEntry[1]);
+  return { pair, metrics, performance7Day }; 
 }
 
-function renderStatsTable(results) {
+function updateSortIcons(activeColumn, direction) {
+  const headers = document.querySelectorAll('.stats-sortable-header');
+  headers.forEach(header => {
+    const column = header.getAttribute('data-column');
+    const icon = header.querySelector('.sort-icon');
+    if (!icon) return;
+    
+    if (column === activeColumn) {
+      icon.className = `sort-icon bi bi-arrow-${direction === 'asc' ? 'up' : 'down'}-short`;
+    } else {
+      icon.className = 'sort-icon bi bi-arrow-down-short text-muted';
+    }
+  });
+}
+
+function handleStatsSort(column) {
+  // Toggle direction if same column, default to desc for new column
+  if (currentStatsSort.column === column) {
+    currentStatsSort.direction = currentStatsSort.direction === 'desc' ? 'asc' : 'desc';
+  } else {
+    currentStatsSort.column = column;
+    currentStatsSort.direction = 'desc';
+  }
+  
+  // Re-render table with new sort
+  const statsTable = document.getElementById('statsTable');
+  if (statsTable && statsTable.dataset.results) {
+    const results = JSON.parse(statsTable.dataset.results);
+    renderStatsTable(results, currentStatsSort.column, currentStatsSort.direction);
+  }
+}
+
+function renderStatsTable(results, sortColumn = null, sortDirection = 'desc') {
   const tableBody = document.getElementById('statsTableBody');
   const statusElement = document.getElementById('volatilityStatus');
   if (!tableBody) return;
 
   if (!Array.isArray(results) || results.length === 0) {
-    tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted">No data available</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No data available</td></tr>';
     if (statusElement) statusElement.textContent = 'No OHLC data available for USD pairs.';
     return;
   }
 
-  const sortedResults = [...results].sort((a, b) => {
-    const aVol = Number.isFinite(a.metrics?.volatility) ? a.metrics.volatility : -Infinity;
-    const bVol = Number.isFinite(b.metrics?.volatility) ? b.metrics.volatility : -Infinity;
-    return bVol - aVol;
-  });
+  // Sort results based on column and direction
+  let sortedResults = [...results];
+  if (sortColumn) {
+    sortedResults.sort((a, b) => {
+      let aValue, bValue;
+      
+      switch (sortColumn) {
+        case 'pair':
+          aValue = a.pair || '';
+          bValue = b.pair || '';
+          return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+        case 'performance7Day':
+          aValue = Number.isFinite(a.performance7Day) ? a.performance7Day : -Infinity;
+          bValue = Number.isFinite(b.performance7Day) ? b.performance7Day : -Infinity;
+          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+        case 'performance30Day':
+          aValue = Number.isFinite(a.metrics?.performance) ? a.metrics.performance : -Infinity;
+          bValue = Number.isFinite(b.metrics?.performance) ? b.metrics.performance : -Infinity;
+          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+        case 'volatility':
+          aValue = Number.isFinite(a.metrics?.volatility) ? a.metrics.volatility : -Infinity;
+          bValue = Number.isFinite(b.metrics?.volatility) ? b.metrics.volatility : -Infinity;
+          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+        case 'volume':
+          aValue = Number.isFinite(a.metrics?.averageDollarVolume) ? a.metrics.averageDollarVolume : -Infinity;
+          bValue = Number.isFinite(b.metrics?.averageDollarVolume) ? b.metrics.averageDollarVolume : -Infinity;
+          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
+        default:
+          return 0;
+      }
+    });
+  } else {
+    // Default sort by volatility descending
+    sortedResults.sort((a, b) => {
+      const aVol = Number.isFinite(a.metrics?.volatility) ? a.metrics.volatility : -Infinity;
+      const bVol = Number.isFinite(b.metrics?.volatility) ? b.metrics.volatility : -Infinity;
+      return bVol - aVol;
+    });
+  }
 
-  const rows = sortedResults.map(({ pair, metrics }) => {
-    const performanceValue = metrics?.performance;
+  const rows = sortedResults.map(({ pair, metrics, performance7Day }) => {
+    const performance7DayValue = performance7Day;
+    const performance30DayValue = metrics?.performance;
     const volatilityValue = metrics?.volatility;
     const averageDollarVolumeValue = metrics?.averageDollarVolume;
-    const performanceClass = Number.isFinite(performanceValue)
-      ? performanceValue >= 0
+    
+    const performance7DayClass = Number.isFinite(performance7DayValue)
+      ? performance7DayValue >= 0
+        ? 'text-success'
+        : 'text-danger'
+      : 'text-muted';
+    const performance30DayClass = Number.isFinite(performance30DayValue)
+      ? performance30DayValue >= 0
         ? 'text-success'
         : 'text-danger'
       : 'text-muted';
@@ -1466,7 +1557,8 @@ function renderStatsTable(results) {
     return `
       <tr>
         <td>${escapeHtml(pair)}</td>
-        <td class="text-end ${performanceClass}">${formatPercent(performanceValue)}</td>
+        <td class="text-end ${performance7DayClass}">${formatPercent(performance7DayValue)}</td>
+        <td class="text-end ${performance30DayClass}">${formatPercent(performance30DayValue)}</td>
         <td class="text-end ${volatilityClass}">${formatPercent(volatilityValue)}</td>
         <td class="text-end ${volumeClass}">${volumeDisplay}</td>
       </tr>
@@ -1474,6 +1566,14 @@ function renderStatsTable(results) {
   });
 
   tableBody.innerHTML = rows.join('');
+  updateSortIcons(sortColumn, sortDirection);
+  
+  // Store results in table element for sorting
+  const statsTable = document.getElementById('statsTable');
+  if (statsTable) {
+    statsTable.dataset.results = JSON.stringify(results);
+  }
+  
   if (statusElement) {
     statusElement.classList.remove('text-danger');
   }
@@ -1504,7 +1604,7 @@ async function loadStatsData() {
       .filter((result) => result.status === 'fulfilled' && result.value)
       .map((result) => result.value);
 
-    renderStatsTable(successful);
+    renderStatsTable(successful, 'volatility', 'desc');
 
     const failures = results.filter((result) => result.status === 'rejected');
     if (failures.length > 0 && statusElement) {
@@ -1515,7 +1615,7 @@ async function loadStatsData() {
     volatilityDataLoaded = true;
   } catch (error) {
     if (tableBody) {
-      tableBody.innerHTML = '<tr><td colspan="4" class="text-center text-danger">Failed to load volatility data</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Failed to load volatility data</td></tr>';
     }
     if (statusElement) {
       statusElement.classList.add('text-danger');
@@ -1567,6 +1667,14 @@ document.addEventListener('DOMContentLoaded', () => {
     if (statsTab) {
         statsTab.addEventListener('shown.bs.tab', loadStatsData);
     }
+    
+    // Add event listeners for sortable stats table headers
+    document.querySelectorAll('.stats-sortable-header').forEach(header => {
+        header.addEventListener('click', function() {
+            const column = this.getAttribute('data-column');
+            handleStatsSort(column);
+        });
+    });
     document.getElementById('refreshOrders').addEventListener('click', fetchOpenOrders);
     const refreshPositionsButton = document.getElementById('refreshPositions');
     if (refreshPositionsButton) {

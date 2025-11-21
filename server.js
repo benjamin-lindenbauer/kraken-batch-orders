@@ -113,11 +113,9 @@ router.post('/api/batch-orders', async (req, res) => {
         for (let i = 0; i < numOrders; i++) {
             sumFactors += Math.pow(1 + volume_distance / 100, i);
         }
-        
-        //total value should be total rounded to 100
-        const totalVolume = Math.floor(total / 100) * 100;
+
         // Calculate the base price per order that will result in the desired total value
-        const basePrice = totalVolume / sumFactors;
+        const basePrice = total / sumFactors;
         
         for (let i = 0; i < numOrders; i++) {
             const orderPrice = direction === 'buy' 
@@ -126,11 +124,12 @@ router.post('/api/batch-orders', async (req, res) => {
             // Calculate this order's portion of the total using the geometric progression with volume_distance
             const pricePerOrder = basePrice * Math.pow(1 + volume_distance / 100, i);
             const volume = pricePerOrder / orderPrice;
+
             const order = {
                 ordertype: "limit",
                 price: orderPrice.toFixed(priceDecimals),
                 type: direction,
-                volume: volume.toFixed(6 - priceDecimals),
+                volume: volume.toFixed(Math.max(0, 6 - priceDecimals)),
                 pair: asset,
                 ...leverage > 1 && { leverage: pairInfo.leverage },
                 ...(reduce_only === true && { reduce_only: true })
