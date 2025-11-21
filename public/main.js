@@ -1405,6 +1405,22 @@ function calculateStats(ohlcRows) {
   return { volatility: averageRange, performance, averageDollarVolume };
 }
 
+function calculateTodayStats(ohlcRows) {
+  if (!Array.isArray(ohlcRows) || ohlcRows.length === 0) return null;
+
+  // Get the last item (today's data)
+  const todayData = ohlcRows[ohlcRows.length - 1];
+  if (!todayData || todayData.length < 5) return null;
+
+  const open = Number(todayData[1]);
+  const close = Number(todayData[4]);
+
+  if (!Number.isFinite(open) || !Number.isFinite(close) || open === 0) return null;
+
+  const todayPerformance = ((close - open) / open) * 100;
+  return todayPerformance;
+}
+
 function calculate7DayStats(ohlcRows) {
   if (!Array.isArray(ohlcRows) || ohlcRows.length < 2) return null;
 
@@ -1446,7 +1462,8 @@ async function fetchOhlcForPair(pair, sinceTimestamp) {
 
   const metrics = calculateStats(seriesEntry[1]);
   const performance7Day = calculate7DayStats(seriesEntry[1]);
-  return { pair, metrics, performance7Day }; 
+  const performanceToday = calculateTodayStats(seriesEntry[1]);
+  return { pair, metrics, performance7Day, performanceToday }; 
 }
 
 function updateSortIcons(activeColumn, direction) {
@@ -1487,7 +1504,7 @@ function renderStatsTable(results, sortColumn = null, sortDirection = 'desc') {
   if (!tableBody) return;
 
   if (!Array.isArray(results) || results.length === 0) {
-    tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No data available</td></tr>';
+    tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No data available</td></tr>';
     if (statusElement) statusElement.textContent = 'No OHLC data available for USD pairs.';
     return;
   }
@@ -1503,6 +1520,10 @@ function renderStatsTable(results, sortColumn = null, sortDirection = 'desc') {
           aValue = a.pair || '';
           bValue = b.pair || '';
           return sortDirection === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+        case 'performanceToday':
+          aValue = Number.isFinite(a.performanceToday) ? a.performanceToday : -Infinity;
+          bValue = Number.isFinite(b.performanceToday) ? b.performanceToday : -Infinity;
+          return sortDirection === 'asc' ? aValue - bValue : bValue - aValue;
         case 'performance7Day':
           aValue = Number.isFinite(a.performance7Day) ? a.performance7Day : -Infinity;
           bValue = Number.isFinite(b.performance7Day) ? b.performance7Day : -Infinity;
@@ -1532,12 +1553,18 @@ function renderStatsTable(results, sortColumn = null, sortDirection = 'desc') {
     });
   }
 
-  const rows = sortedResults.map(({ pair, metrics, performance7Day }) => {
+  const rows = sortedResults.map(({ pair, metrics, performance7Day, performanceToday }) => {
+    const performanceTodayValue = performanceToday;
     const performance7DayValue = performance7Day;
     const performance30DayValue = metrics?.performance;
     const volatilityValue = metrics?.volatility;
     const averageDollarVolumeValue = metrics?.averageDollarVolume;
     
+    const performanceTodayClass = Number.isFinite(performanceTodayValue)
+      ? performanceTodayValue >= 0
+        ? 'text-success'
+        : 'text-danger'
+      : 'text-muted';
     const performance7DayClass = Number.isFinite(performance7DayValue)
       ? performance7DayValue >= 0
         ? 'text-success'
@@ -1557,6 +1584,7 @@ function renderStatsTable(results, sortColumn = null, sortDirection = 'desc') {
     return `
       <tr>
         <td>${escapeHtml(pair)}</td>
+        <td class="text-end ${performanceTodayClass}">${formatPercent(performanceTodayValue)}</td>
         <td class="text-end ${performance7DayClass}">${formatPercent(performance7DayValue)}</td>
         <td class="text-end ${performance30DayClass}">${formatPercent(performance30DayValue)}</td>
         <td class="text-end ${volatilityClass}">${formatPercent(volatilityValue)}</td>
@@ -1615,7 +1643,7 @@ async function loadStatsData() {
     volatilityDataLoaded = true;
   } catch (error) {
     if (tableBody) {
-      tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Failed to load volatility data</td></tr>';
+      tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Failed to load volatility data</td></tr>';
     }
     if (statusElement) {
       statusElement.classList.add('text-danger');
