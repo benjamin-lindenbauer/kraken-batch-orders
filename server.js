@@ -460,6 +460,26 @@ router.get('/api/ticker/:pair', async (req, res) => {
     }
 });
 
+router.get('/api/ohlc', async (req, res) => {
+    try {
+        const { pair, interval, since } = req.query;
+
+        if (!pair) {
+            return res.status(400).json({ error: 'pair query parameter is required' });
+        }
+
+        const params = new URLSearchParams();
+        params.append('pair', pair);
+        if (interval) params.append('interval', interval);
+        if (since) params.append('since', since);
+
+        const response = await axios.get(`https://api.kraken.com/0/public/OHLC?${params.toString()}`);
+        res.json(response.data);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
 router.get('/api/balances', async (req, res) => {
     try {
         let nonce = generateNonce();

@@ -1445,7 +1445,7 @@ async function fetchOhlcForPair(pair, sinceTimestamp) {
     since: sinceTimestamp.toString(),
   });
 
-  const response = await fetch(`https://api.kraken.com/0/public/OHLC?${query.toString()}`);
+  const response = await fetch(`/api/ohlc?${query.toString()}`);
   if (!response.ok) {
     throw new Error(`Failed to fetch OHLC for ${pair} (status ${response.status})`);
   }
