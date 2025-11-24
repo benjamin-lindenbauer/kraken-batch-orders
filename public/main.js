@@ -1190,7 +1190,7 @@ async function updateBalances() {
         
         // Filter and sort balances
         const significantBalances = Object.entries(balances)
-            .filter(([, amount]) => parseFloat(amount) > 0.001)
+            .filter(([currency, amount]) => parseFloat(amount) > (currency === 'XXBT' ? 0.0001 : 0.01))
             .map(([currency, amount]) => [fixCurrencyNames(currency), amount])
             .sort(([, a], [, b]) => parseFloat(b) - parseFloat(a));
 
