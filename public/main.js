@@ -321,18 +321,30 @@ function renderOpenOrdersTable({ customMessage, messageClass } = {}) {
     const ordersByPair = {};
     filteredData.forEach(([orderId, order]) => {
         const pair = order.descr.pair;
+        const price = parseFloat(order.descr.price);
+        const volume = parseFloat(order.vol);
         if (!ordersByPair[pair]) {
-            ordersByPair[pair] = [];
+            ordersByPair[pair] = {
+                orderIds: [],
+                totalVolume: 0,
+                totalValue: 0,
+            };
         }
-        ordersByPair[pair].push(orderId);
+        ordersByPair[pair].orderIds.push(orderId);
+        if (Number.isFinite(volume)) {
+            ordersByPair[pair].totalVolume += volume;
+            if (Number.isFinite(price)) {
+                ordersByPair[pair].totalValue += price * volume;
+            }
+        }
     });
 
     const rows = [];
-    filteredData.forEach(([orderId, order], index) => {
+    filteredData.forEach(([orderId, order]) => {
         const pair = order.descr.pair;
-        const pairOrders = ordersByPair[pair];
+        const pairData = ordersByPair[pair];
+        const pairOrders = pairData.orderIds;
         const isLastOfPair = pairOrders[pairOrders.length - 1] === orderId;
-        const showCancelAllButton = isLastOfPair && pairOrders.length > 1;
         const orderType = order.descr.ordertype || '-';
         const price = parseFloat(order.descr.price);
         const volume = parseFloat(order.vol);
@@ -363,19 +375,22 @@ function renderOpenOrdersTable({ customMessage, messageClass } = {}) {
                     <button type="button" class="btn btn-outline-danger btn-sm cancel-order-button" onclick="cancelOrder('${orderId}', document.getElementById('order-${orderId}'))">
                         Cancel
                     </button>
-                    ${showCancelAllButton ? `
-                    <button type="button" class="btn btn-outline-danger btn-sm ms-1 cancel-all-pair" data-pair="${pair}" data-order-ids='${JSON.stringify(pairOrders)}'>
-                        Cancel All ${pair}
-                    </button>
-                    ` : ''}
                 </td>
             </tr>
         `);
 
-        if (isLastOfPair && index !== filteredData.length - 1) {
+        if (isLastOfPair) {
             rows.push(`
-                <tr class="table-secondary table-group-separator">
-                    <td colspan="10" class="p-1"></td>
+                <tr class="table-secondary pair-summary-row">
+                    <td colspan="2" class="fw-semibold">${pair} summary</td>
+                    <td colspan="2">Orders: ${pairOrders.length}</td>
+                    <td colspan="3">Total volume: ${formatNumeric(pairData.totalVolume.toFixed(4))}</td>
+                    <td colspan="2">Total value: ${formatNumeric(pairData.totalValue.toFixed(2))}</td>
+                    <td class="text-end">
+                        <button type="button" class="btn btn-outline-danger btn-sm cancel-all-pair" data-pair="${pair}" data-order-ids='${JSON.stringify(pairOrders)}'>
+                            Cancel All ${pair}
+                        </button>
+                    </td>
                 </tr>
             `);
         }
@@ -1057,12 +1072,16 @@ async function cancelAllOfPair(pair, orderIds) {
     errorDiv.classList.add('is-hidden');
     
     try {
-        const response = await fetch('/api/cancel-all-of-pair', {
+        const isSingleOrder = Array.isArray(orderIds) && orderIds.length === 1;
+        const endpoint = isSingleOrder ? '/api/cancel-order' : '/api/cancel-all-of-pair';
+        const payload = isSingleOrder ? { txid: orderIds[0] } : { orderIds };
+
+        const response = await fetch(endpoint, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ orderIds })
+            body: JSON.stringify(payload)
         });
 
         const result = await response.json();
@@ -1075,7 +1094,8 @@ async function cancelAllOfPair(pair, orderIds) {
         }
 
         errorDiv.className = 'alert alert-success mt-3';
-        errorDiv.textContent = `Successfully canceled ${result.count || orderIds.length} ${pair} orders`;
+        const canceledCount = result.count || orderIds.length;
+        errorDiv.textContent = `Successfully canceled ${canceledCount} ${pair} order${canceledCount === 1 ? '' : 's'}`;
         errorDiv.classList.remove('is-hidden');
 
         openOrdersData = openOrdersData.filter(([id]) => !orderIds.includes(id));
