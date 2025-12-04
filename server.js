@@ -129,7 +129,7 @@ router.post('/api/batch-orders', async (req, res) => {
                 ordertype: "limit",
                 price: orderPrice.toFixed(priceDecimals),
                 type: direction,
-                volume: volume.toFixed(Math.max(0, 6 - priceDecimals)),
+                volume: volume.toFixed(Math.max(2, 6 - priceDecimals)),
                 pair: asset,
                 ...leverage > 1 && { leverage: pairInfo.leverage },
                 ...(reduce_only === true && { reduce_only: true })
@@ -218,7 +218,7 @@ router.post('/api/add-order', async (req, res) => {
             price: price.toFixed(priceDecimals),
             type: direction,
             clOrdId: `${Date.now()}`,
-            volume: (total / price).toFixed(6 - priceDecimals),
+            volume: (total / price).toFixed(Math.max(2, 6 - priceDecimals)),
             pair: asset,
             ...leverage > 1 && { leverage: leverage },
             ...stop_loss && { close: { ordertype: "stop-loss", price: (price / (1 + stop_loss / 100)).toFixed(priceDecimals) } },
