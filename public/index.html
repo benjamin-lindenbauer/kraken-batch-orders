@@ -53,6 +53,9 @@
                     <button class="nav-link" id="open-positions-tab" data-bs-toggle="tab" data-bs-target="#open-pos" type="button" role="tab">Open Positions</button>
                 </li>
                 <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="trade-history-tab" data-bs-toggle="tab" data-bs-target="#trade-history" type="button" role="tab">Trade History</button>
+                </li>
+                <li class="nav-item" role="presentation">
                     <button class="nav-link" id="stats-tab" data-bs-toggle="tab" data-bs-target="#stats" type="button" role="tab">Stats</button>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -290,19 +293,36 @@
                         </table>
                     </div>
                 </div>
-                <div class="tab-pane fade" id="chart" role="tabpanel">
-                    <div class="card h-100">
-                        <div class="card-body p-0" style="height: 600px;">
-                            <div class="tradingview-widget-container h-100" id="tradingviewWidgetContainer" style="height: 100%; width: 100%;">
-                                <div class="tradingview-widget-container__widget" id="tradingviewWidget" style="height: calc(100% - 32px); width: 100%;"></div>
-                                <div class="tradingview-widget-copyright">
-                                    <a id="tradingviewWidgetLink" href="https://www.tradingview.com/symbols/BTCUSD/?exchange=KRAKEN" rel="noopener nofollow" target="_blank">
-                                        <span class="blue-text">Bitcoin price</span>
-                                    </a>
-                                    <span class="trademark"> by TradingView</span>
-                                </div>
-                            </div>
+                <div class="tab-pane fade" id="trade-history" role="tabpanel">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Trade History</h5>
+                        <div class="d-flex align-items-center">
+                            <select id="tradeHistoryPairFilter" class="form-select me-2" style="width: auto;" disabled>
+                                <option value="">All pairs</option>
+                            </select>
+                            <button id="refreshTradeHistory" class="btn btn-outline-primary btn-sm">Refresh</button>
                         </div>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Pair</th>
+                                    <th>Time</th>
+                                    <th>Type</th>
+                                    <th>Order Type</th>
+                                    <th class="numeric">Price</th>
+                                    <th class="numeric">Cost</th>
+                                    <th class="numeric">Fee</th>
+                                    <th class="numeric">Volume</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tradeHistoryTableBody">
+                                <tr>
+                                    <td colspan="8" class="table-placeholder">Loading trade history...</td>
+                                </tr>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
                 <div class="tab-pane fade" id="stats" role="tabpanel">
@@ -349,6 +369,21 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="chart" role="tabpanel">
+                    <div class="card h-100">
+                        <div class="card-body p-0" style="height: 600px;">
+                            <div class="tradingview-widget-container h-100" id="tradingviewWidgetContainer" style="height: 100%; width: 100%;">
+                                <div class="tradingview-widget-container__widget" id="tradingviewWidget" style="height: calc(100% - 32px); width: 100%;"></div>
+                                <div class="tradingview-widget-copyright">
+                                    <a id="tradingviewWidgetLink" href="https://www.tradingview.com/symbols/BTCUSD/?exchange=KRAKEN" rel="noopener nofollow" target="_blank">
+                                        <span class="blue-text">Bitcoin price</span>
+                                    </a>
+                                    <span class="trademark"> by TradingView</span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

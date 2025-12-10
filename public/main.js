@@ -1,6 +1,8 @@
 ﻿let orders = [];
 let openOrdersData = [];
+let tradeHistoryData = [];
 const openPositionsBody = document.getElementById('openPositionsTable');
+const tradeHistoryTableBody = document.getElementById('tradeHistoryTableBody');
 const themeToggleButton = document.getElementById('themeToggle');
 const THEME_STORAGE_KEY = 'kraken-theme-preference';
 const TRADINGVIEW_WIDGET_SRC = 'https://s3.tradingview.com/tv.js';
@@ -116,6 +118,67 @@ function fixCurrencyNames(currency) {
     return currencyMap[currency] || currency;
 }
 
+function splitPairSymbols(pair) {
+  if (!pair) {
+    return { base: '', quote: '' };
+  }
+
+  const value = String(pair);
+
+  if (value.includes('/')) {
+    const [base = '', quote = ''] = value.split('/');
+    return { base, quote };
+  }
+
+  const quoteCandidates = [
+    'ZUSD',
+    'USD',
+    'USDT',
+    'ZEUR',
+    'EUR',
+    'ZGBP',
+    'GBP',
+    'ZCAD',
+    'CAD',
+    'ZJPY',
+    'JPY',
+    'ZCHF',
+    'CHF',
+    'AUD',
+    'NZD',
+    'USDC',
+    'DAI',
+    'ETH',
+    'XBT',
+    'BTC',
+  ];
+
+  for (const quote of quoteCandidates) {
+    if (value.endsWith(quote) && value.length > quote.length) {
+      const base = value.slice(0, value.length - quote.length);
+      return { base, quote };
+    }
+  }
+
+  if (value.length % 2 === 0) {
+    const midpoint = value.length / 2;
+    return { base: value.slice(0, midpoint), quote: value.slice(midpoint) };
+  }
+
+  return { base: value, quote: '' };
+}
+
+function formatPairDisplay(pair) {
+  const { base, quote } = splitPairSymbols(pair);
+  if (base && quote) {
+    return `${fixCurrencyNames(base)}/${fixCurrencyNames(quote)}`;
+  }
+  if (base) {
+    return fixCurrencyNames(base);
+  }
+  return fixCurrencyNames(pair);
+}
+
 function renderEmptyRow() {
   if (!openPositionsBody) return
   openPositionsBody.innerHTML = `
@@ -155,7 +218,7 @@ function renderPositions(positions) {
       const opened = formatTimestamp(position.openedAt)
       return `
         <tr>
-          <td>${escapeHtml(fixCurrencyNames(position.pair))}</td>
+          <td>${escapeHtml(formatPairDisplay(position.pair))}</td>
           <td>${escapeHtml(position.type)}</td>
           <td>${escapeHtml(position.orderType)}</td>
           <td class="numeric">${formatNumeric(position.volume)}</td>
@@ -195,6 +258,108 @@ async function fetchOpenPositions() {
     const message = error instanceof Error ? error.message : 'Unknown error'
     renderErrorRow(message)
   }
+}
+
+function renderTradeHistoryPlaceholder(message) {
+  if (!tradeHistoryTableBody) return
+  tradeHistoryTableBody.innerHTML = `
+    <tr>
+      <td colspan="8" class="table-placeholder">${escapeHtml(message)}</td>
+    </tr>
+  `
+}
+
+function renderTradeHistoryRows(trades) {
+  if (!tradeHistoryTableBody) return
+  const pairFilter = document.getElementById('tradeHistoryPairFilter')
+  const selectedPair = pairFilter ? pairFilter.value : ''
+  const sourceTrades = Array.isArray(trades) ? trades : tradeHistoryData
+  const filteredTrades = selectedPair
+    ? sourceTrades.filter((trade) => trade.pair === selectedPair)
+    : sourceTrades
+
+  if (!Array.isArray(filteredTrades) || filteredTrades.length === 0) {
+    const message = selectedPair ? 'No trades for this pair' : 'No trades found'
+    renderTradeHistoryPlaceholder(message)
+    return
+  }
+
+  const rows = filteredTrades
+    .map((trade) => {
+      const time = formatTimestamp(trade.time)
+      return `
+        <tr>
+          <td>${escapeHtml(formatPairDisplay(trade.pair))}</td>
+          <td>${time}</td>
+          <td>${escapeHtml(trade.type)}</td>
+          <td>${escapeHtml(trade.ordertype)}</td>
+          <td class="numeric">${formatNumeric(trade.price)}</td>
+          <td class="numeric">${formatNumeric(trade.cost)}</td>
+          <td class="numeric">${formatNumeric(trade.fee)}</td>
+          <td class="numeric">${formatNumeric(trade.vol)}</td>
+        </tr>
+      `
+    })
+    .join('')
+
+  tradeHistoryTableBody.innerHTML = rows
+}
+
+async function fetchTradeHistory() {
+  if (!tradeHistoryTableBody) return
+
+  renderTradeHistoryPlaceholder('Loading trade history...')
+
+  const pairFilter = document.getElementById('tradeHistoryPairFilter')
+  if (pairFilter) {
+    pairFilter.disabled = true
+  }
+
+  try {
+    const response = await fetch('/api/trades-history')
+    if (!response.ok) {
+      throw new Error(`Server responded with status ${response.status}`)
+    }
+
+    const payload = await response.json()
+    if (payload.error) {
+      const errorMessage = Array.isArray(payload.error) ? payload.error.join(', ') : payload.error
+      throw new Error(errorMessage)
+    }
+
+    tradeHistoryData = payload.trades ?? []
+    const pairs = tradeHistoryData.map((trade) => trade.pair)
+    updateTradeHistoryPairFilterOptions(pairs)
+    renderTradeHistoryRows(tradeHistoryData)
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    renderTradeHistoryPlaceholder(`Failed to load trade history: ${message}`)
+    tradeHistoryData = []
+    updateTradeHistoryPairFilterOptions([])
+  }
+}
+
+function updateTradeHistoryPairFilterOptions(pairs) {
+  const pairFilter = document.getElementById('tradeHistoryPairFilter')
+  if (!pairFilter) return
+
+  const uniquePairs = Array.from(new Set(pairs)).sort((a, b) => a.localeCompare(b))
+  const previousValue = pairFilter.value
+  const options = ['<option value="">All pairs</option>']
+
+  uniquePairs.forEach((pair) => {
+    options.push(`<option value="${pair}">${formatPairDisplay(pair)}</option>`)
+  })
+
+  pairFilter.innerHTML = options.join('')
+
+  if (uniquePairs.includes(previousValue)) {
+    pairFilter.value = previousValue
+  } else {
+    pairFilter.value = ''
+  }
+
+  pairFilter.disabled = uniquePairs.length === 0
 }
 
 function formatNumeric(value) {
@@ -1749,6 +1914,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     document.getElementById('open-orders-tab').addEventListener('click', fetchOpenOrders);
     document.getElementById('open-positions-tab').addEventListener('click', fetchOpenPositions);
+    const tradeHistoryTab = document.getElementById('trade-history-tab');
+    if (tradeHistoryTab) {
+        tradeHistoryTab.addEventListener('click', fetchTradeHistory);
+    }
     const statsTab = document.getElementById('stats-tab');
     if (statsTab) {
         statsTab.addEventListener('shown.bs.tab', loadStatsData);
@@ -1765,6 +1934,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const refreshPositionsButton = document.getElementById('refreshPositions');
     if (refreshPositionsButton) {
         refreshPositionsButton.addEventListener('click', fetchOpenPositions);
+    }
+    const refreshTradeHistoryButton = document.getElementById('refreshTradeHistory');
+    if (refreshTradeHistoryButton) {
+        refreshTradeHistoryButton.addEventListener('click', fetchTradeHistory);
+    }
+    const tradeHistoryPairFilter = document.getElementById('tradeHistoryPairFilter');
+    if (tradeHistoryPairFilter) {
+        tradeHistoryPairFilter.addEventListener('change', () => renderTradeHistoryRows());
     }
     const pairFilter = document.getElementById('openOrdersPairFilter');
     if (pairFilter) {
@@ -1805,6 +1982,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const initialPair = getSelectedPair() || 'BTC/USD';
     updateTradingViewWidget(initialPair);
     fetchOpenPositions();
+    fetchTradeHistory();
     loadStatsData();
 
     // Start balance updates

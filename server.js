@@ -93,6 +93,25 @@ function normaliseOpenPositions(result) {
     }));
 }
 
+function normaliseTradesHistory(trades) {
+    if (!trades || typeof trades !== 'object') {
+        return [];
+    }
+
+    return Object.values(trades)
+        .map(trade => ({
+            pair: trade?.pair ?? '',
+            time: trade?.time ?? 0,
+            type: trade?.type ?? '',
+            ordertype: trade?.ordertype ?? '',
+            price: trade?.price ?? '0',
+            cost: trade?.cost ?? '0',
+            fee: trade?.fee ?? '0',
+            vol: trade?.vol ?? '0'
+        }))
+        .sort((a, b) => Number(b.time || 0) - Number(a.time || 0));
+}
+
 // Export the router for Netlify Functions
 const router = Router();
 
@@ -542,6 +561,61 @@ router.post('/api/trade-balance', async (req, res) => {
     } catch (error) {
         console.error('Error fetching trade balance:', error.response?.data || error.message);
         res.status(500).json({ error: [error.message] });
+    }
+});
+
+router.get('/api/trades-history', async (req, res) => {
+    try {
+        const apiKey = process.env.KRAKEN_API_KEY;
+        const apiSecret = process.env.KRAKEN_API_SECRET;
+
+        if (!apiKey || !apiSecret) {
+            return res.status(500).json({ error: ['Kraken API credentials are not configured'] });
+        }
+
+        const path = '/0/private/TradesHistory';
+        const nonce = generateNonce();
+        const params = new URLSearchParams();
+        params.append('nonce', nonce);
+
+        const { start, end, ofs } = req.query;
+        if (start) params.append('start', String(start));
+        if (end) params.append('end', String(end));
+        if (ofs) params.append('ofs', String(ofs));
+
+        const body = params.toString();
+        const signature = getMessageSignature(path, body, apiSecret, nonce);
+
+        const response = await fetch(`https://api.kraken.com${path}`, {
+            method: 'POST',
+            headers: {
+                'API-Key': apiKey,
+                'API-Sign': signature,
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body
+        });
+
+        const payload = await response.json();
+
+        if (!response.ok) {
+            return res.status(response.status).json({ error: [`Kraken request failed with status ${response.status}`] });
+        }
+
+        if (Array.isArray(payload.error) && payload.error.length > 0) {
+            return res.status(400).json({ error: payload.error });
+        }
+
+        const result = payload.result ?? {};
+        const trades = normaliseTradesHistory(result.trades);
+
+        return res.json({
+            count: result.count ?? trades.length,
+            trades
+        });
+    } catch (error) {
+        console.error('Error fetching trade history:', error);
+        res.status(500).json({ error: [error.message || 'Unhandled error fetching trade history'] });
     }
 });
 
