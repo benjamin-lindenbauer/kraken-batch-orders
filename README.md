@@ -49,6 +49,11 @@ A web application for creating and managing batch orders on Kraken (spot/margin)
 
 Note: Destructive actions (Cancel All and Cancel All for Pair) prompt for confirmation in the UI to prevent accidental cancellations.
 
+### Position Tracking & History
+- **Open positions dashboard**: Dedicated tab surfaces normalized Kraken positions with pair, side, order type, filled/remaining size, cost, margin, value, net P&L, opened timestamp, and status plus a manual refresh control.
+- **Trade history explorer**: Uses the authenticated `/api/trades-history` endpoint to show the newest fills first with pair, time, side, order type, price, cost, fee, and volume per trade, complete with loading/empty/error placeholders.
+- **Pair-aware filters & refresh controls**: Automatically generated dropdown filters let you focus on a single market while refresh buttons pull the latest position and fill data on demand.
+
 ## Architecture
 
 ### Backend (Node.js + Express)
@@ -57,13 +62,15 @@ Note: Destructive actions (Cancel All and Cancel All for Pair) prompt for confir
 - **Kraken API integration** with proper request signing and nonce management
 - **Order batching logic**: Automatically splits large orders into batches (max 15 orders per batch)
 - **Geometric progression calculations** for price and volume distribution
+- **Position & history adapters**: Normalizes Kraken `OpenPositions` and `TradesHistory` payloads (with nonce retries) so the frontend can render consistent, sorted tables.
 - **Netlify Functions support** for serverless deployment
 
 ### Frontend (Vanilla JavaScript + Bootstrap)
-- **Responsive UI** with tabbed interface (Create Orders / Open Orders)
+- **Responsive UI** with tabbed interface (Create Orders / Open Orders / Open Positions / Trade History / Stats / Chart)
 - **Real-time calculations** for order preview and P&L simulation
 - **Live price fetching** from Kraken public API
 - **Account balance tracking** with trade balance queries
+- **Open Positions & Trade History tabs** with normalized tables, empty/loading/error placeholders, dropdown pair filters, and manual refresh buttons backed by the new endpoints.
 - **TradingView integration** for a fully embedded chart that honors the current theme and selected trading pair
 
 ## Trading Pairs Support
@@ -160,8 +167,10 @@ The application supports Netlify Functions for serverless deployment. Configurat
 - `POST /api/cancel-all-of-pair` - Cancel all orders for a trading pair
 - `POST /api/amend-order` - Amend the price and/or size of an existing order
 - `GET /api/open-orders` - Fetch all open orders
-- `GET /api/open-positions` - Fetch normalized open positions data
+- `GET /api/open-positions` - Fetch normalized open positions data (optionally filtered via the `txid` query parameter)
+- `GET /api/trades-history` - Fetch normalized trade history with optional `start`, `end`, and `ofs` query parameters
 - `GET /api/ticker/:pair` - Get current price for a pair
+- `GET /api/ohlc` - Get OHLC candles for a pair (requires `pair`, optional `interval`/`since`)
 - `GET /api/balances` - Get account balances
 - `POST /api/trade-balance` - Get trading balance for an asset
 
