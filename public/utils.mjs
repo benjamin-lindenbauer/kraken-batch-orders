@@ -4,50 +4,50 @@ export const ASSETS = {
     'BTC': {
         symbol: 'BTC',
         name: 'Bitcoin',
-        leverage: '5',
+        leverage: '10',
         priceDecimals: 1,
         default: true
     },
     'ETH': {
         symbol: 'ETH',
         name: 'Ethereum',
-        leverage: '5',
+        leverage: '10',
         priceDecimals: 2
     },
     'XRP': {
         symbol: 'XRP',
         name: 'Ripple',
-        leverage: '5',
+        leverage: '10',
         priceDecimals: 5
     },
     'SUI': {
         symbol: 'SUI',
         name: 'Sui',
-        leverage: '5',
+        leverage: '10',
         priceDecimals: 4
     },
     'DOGE': {
         symbol: 'DOGE',
         name: 'Dogecoin',
-        leverage: '5',
+        leverage: '10',
         priceDecimals: 6
     },
     'SOL': {
         symbol: 'SOL',
         name: 'Solana',
-        leverage: '5',
+        leverage: '10',
         priceDecimals: 2
     },
     'ADA': {
         symbol: 'ADA',
         name: 'Cardano',
-        leverage: '5',
+        leverage: '10',
         priceDecimals: 6
     },
     'LINK': {
         symbol: 'LINK',
         name: 'Chainlink',
-        leverage: '5',
+        leverage: '10',
         priceDecimals: 4
     },
     'BNB': {
@@ -77,7 +77,7 @@ export const ASSETS = {
     'LTC': {
         symbol: 'LTC',
         name: 'Litecoin',
-        leverage: '5',
+        leverage: '10',
         priceDecimals: 2
     },
     'ICP': {
@@ -109,6 +109,30 @@ export const ASSETS = {
         name: 'NEAR Protocol',
         leverage: '3',
         priceDecimals: 3
+    },
+    'BCH': {
+        symbol: 'BCH',
+        name: 'Bitcoin Cash',
+        leverage: '3',
+        priceDecimals: 2
+    },
+    'AVAX': {
+        symbol: 'AVAX',
+        name: 'Avalanche',
+        leverage: '10',
+        priceDecimals: 2
+    },
+    'HBAR': {
+        symbol: 'HBAR',
+        name: 'Hedera',
+        leverage: '3',
+        priceDecimals: 5
+    },
+    'SHIB': {
+        symbol: 'SHIB',
+        name: 'Shiba Inu',
+        leverage: '3',
+        priceDecimals: 8
     },
 };
 
