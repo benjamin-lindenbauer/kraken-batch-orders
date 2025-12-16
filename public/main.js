@@ -1321,9 +1321,19 @@ function setLeverageForCurrentPair() {
 function handlePairChange() {
     const pair = getSelectedPair() || 'BTC/USD';
     const pairInfo = getPairInfo(pair);
-    const maxLeverage = pairInfo ? parseInt(pairInfo.leverage) : 5;
+    const maxLeverage = pairInfo ? parseInt(pairInfo.leverage) : 10;
     const leverageSelect = document.getElementById('leverage');
-    const currentLeverage = leverageSelect ? parseInt(leverageSelect.value) : 1;
+    const currentLeverage = leverageSelect ? (leverageSelect.value === 'spot' ? 1 : (parseInt(leverageSelect.value) || 1)) : 1;
+    if (leverageSelect) {
+        Array.from(leverageSelect.options).forEach(option => {
+            const optionLeverage = parseInt(option.value);
+            if (Number.isNaN(optionLeverage)) {
+                option.disabled = false;
+                return;
+            }
+            option.disabled = optionLeverage > maxLeverage;
+        });
+    }
     if (leverageSelect && maxLeverage < currentLeverage) leverageSelect.value = maxLeverage;
     updateTotalVolume(pair, Math.min(maxLeverage, currentLeverage));
     updateStartPrice();
@@ -1423,13 +1433,24 @@ async function createOrders(event) {
     }
     const stopLossEnabled = document.getElementById('enableStopLoss').checked;
     const takeProfitEnabled = document.getElementById('enableTakeProfit').checked;
+    const pair = getSelectedPair();
+    if (!pair) {
+        document.getElementById('result').innerHTML = `<div class="alert alert-danger">Please select a trading pair.</div>`;
+        return;
+    }
+
+    const pairInfo = getPairInfo(pair);
+    const maxLeverage = pairInfo ? parseInt(pairInfo.leverage) : 10;
+    const selectedLeverageValue = document.getElementById('leverage').value;
+    const selectedLeverage = selectedLeverageValue === 'spot' ? 1 : (parseInt(selectedLeverageValue) || 1);
+    const leverage = Math.min(maxLeverage, selectedLeverage);
 
     const formData = {
-        asset: getSelectedPair() || 'BTC/USD',
+        asset: pair,
         price: parseFloat(document.getElementById('start_price').value),
         direction: document.getElementById('direction').value,
         numOrders,
-        leverage: parseInt(document.getElementById('leverage').value),
+        leverage,
         distance: parseFloat(document.getElementById('distance').value),
         volume_distance: parseFloat(document.getElementById('volume_distance').value),
         total: parseFloat(document.getElementById('totalValue').value),
@@ -1968,7 +1989,7 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('leverage').addEventListener('change', function() {
         const pair = getSelectedPair() || 'BTC/USD';
         const pairInfo = getPairInfo(pair);
-        const maxLeverage = pairInfo ? parseInt(pairInfo.leverage) : 5;
+        const maxLeverage = pairInfo ? parseInt(pairInfo.leverage) : 10;
         const newLeverage = Math.min(maxLeverage, parseInt(this.value) || 1);
         if (this.value !== 'spot') document.getElementById('leverage').value = newLeverage;
         updateTotalVolume(pair, newLeverage);
