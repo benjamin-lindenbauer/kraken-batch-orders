@@ -68,6 +68,12 @@ export const ASSETS = {
         leverage: '3',
         priceDecimals: 2
     },
+    'XMR': {
+        symbol: 'XMR',
+        name: 'Monero',
+        leverage: '3',
+        priceDecimals: 2
+    },
     'PAXG': {
         symbol: 'PAXG',
         name: 'Paxos Gold',
